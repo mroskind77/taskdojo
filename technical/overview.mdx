@@ -1,0 +1,496 @@
+```mdx
+---
+title: 'Technical Overview'
+description: 'Complete technical documentation for Task Dojo. Architecture, technology stack, setup guides, development workflows, and integration patterns'
+icon: 'code'
+'og:title': 'Task Dojo Technical Documentation - Developer Guide'
+'og:description': 'Full technical documentation for Task Dojo. React, Supabase, Tailwind CSS, TypeScript, Edge Functions, and more'
+keywords: ['technical documentation', 'architecture', 'technology stack', 'react', 'supabase', 'tailwind css', 'typescript', 'development guide', 'setup', 'deployment']
+---
+
+Technology Stack
+
+Task Dojo is built with modern web technologies optimized for performance, security, and developer experience.
+
+Frontend
+
+<CardGroup cols={2}>
+  <Card title="React" icon="react">
+    v18+
+Functional components
+Hooks for state management
+TypeScript for type safety
+  </Card>
+  
+  <Card title="Tailwind CSS" icon="palette">
+    v4.0
+Utility-first styling
+Custom design system
+Dark mode support
+  </Card>
+  
+  <Card title="shadcn/ui" icon="shapes">
+    Component Library
+Accessible components
+Customizable
+TypeScript-first
+  </Card>
+  
+  <Card title="Lucide Icons" icon="icons">
+    Icon System
+Consistent design
+Tree-shakeable
+Accessible
+  </Card>
+</CardGroup>
+
+Backend
+
+<CardGroup cols={2}>
+  <Card title="Supabase" icon="database">
+    Backend as a Service
+PostgreSQL database
+Authentication
+Edge Functions (Deno)
+Storage
+  </Card>
+  
+  <Card title="Hono" icon="server">
+    Web Framework
+Fast, lightweight
+TypeScript support
+Running on Deno
+  </Card>
+  
+  <Card title="KV Store" icon="table">
+    Data Storage
+Key-value table
+Profile management
+Task persistence
+  </Card>
+</CardGroup>
+
+Additional Services
+
+<CardGroup cols={3}>
+  <Card title="Intercom" icon="messages">
+    Customer support & engagement
+  </Card>
+  <Card title="OpenAI / Anthropic" icon="brain">
+    AI task decomposition (optional)
+  </Card>
+  <Card title="Vitest" icon="vial">
+    Unit & integration testing
+  </Card>
+</CardGroup>
+
+Architecture
+
+High-Level Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│           Frontend (React + Vite)            │
+│  ┌────────────┬─────────────┬─────────────┐ │
+│  │ Components │   Utils     │   Styles    │ │
+│  │  - Tasks   │   - API     │   - Global  │ │
+│  │  - Profile │   - Auth    │   - Tokens  │ │
+│  │  - Settings│   - Helpers │             │ │
+│  └────────────┴─────────────┴─────────────┘ │
+└──────────────────┬──────────────────────────┘
+                   │ HTTPS/REST
+┌──────────────────▼──────────────────────────┐
+│       Supabase Edge Functions (Deno)        │
+│  ┌────────────────────────────────────────┐ │
+│  │         Hono Web Server                │ │
+│  │  - Auth endpoints                      │ │
+│  │  - Profile management                  │ │
+│  │  - Task CRUD                           │ │
+│  │  - Insights generation                 │ │
+│  │  - AI task decomposition               │ │
+│  │  - Intercom identity verification      │ │
+│  └────────────────┬───────────────────────┘ │
+└───────────────────┼─────────────────────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+┌───────▼──────┐      ┌─────────▼────────┐
+│   Supabase   │      │  External APIs   │
+│   PostgreSQL │      │  - OpenAI        │
+│   KV Store   │      │  - Anthropic     │
+│   Auth       │      │  - Intercom      │
+└──────────────┘      └──────────────────┘
+```
+
+Three-Tier Architecture
+
+Tier 1: Frontend (Client)
+React application
+State management
+UI rendering
+Client-side validation
+
+Tier 2: Server (Edge Functions)
+Business logic
+Data validation
+Authentication
+External API calls
+
+Tier 3: Database (Supabase)
+Data persistence
+User authentication
+File storage
+
+<Warning>
+The frontend never directly accesses the database. All database operations go through the server layer for security.
+</Warning>
+
+Data Models
+
+Profile
+
+```typescript
+interface Profile {
+  id: string                    // User ID from Supabase Auth
+  email: string                 // User email
+  name: string                  // Display name
+  userType: 'master' | 'sensei' | 'disciple'
+  ageCategory: 'grasshopper' | 'cricket' | 'stickbug' | 'mantis'
+  points: number                // Total points earned
+  beltLevel: string             // Current belt (white-black)
+  streak: number                // Current streak count
+  createdAt: string             // Account creation timestamp
+  lastActiveDate: string        // Last activity timestamp
+  senseiId: string | null       // Sensei ID (for disciples)
+  disciples: string[]           // Disciple IDs (for senseis)
+  graceTokensAvailable: number  // Grace token count (0-2)
+  lastGraceTokenReset: string   // Last token reset timestamp
+  streakSaviorOffered: boolean  // Streak savior state
+  selectedAvatar?: string       // Avatar skin ID
+  totalTasksCompleted?: number  // Total completed tasks
+  earlyCompletions?: number     // Early completion count
+  focusSessionsCompleted?: number // Focus session count
+  discipleCount?: number        // Number of disciples
+}
+```
+
+Task
+
+```typescript
+interface Task {
+  id: string                    // Unique task ID
+  userId: string                // Owner user ID
+  title: string                 // Task title
+  category: 'morning' | 'school' | 'afterschool' | 'nighttime'
+  points: number                // Base point value
+  icon: string                  // Lucide icon name
+  dueTime: string               // Due time (HH:MM format)
+  completed: boolean            // Completion status
+  approved: boolean             // Approval status (disciples)
+  quality: number               // Quality rating (1-5)
+  createdAt: string             // Creation timestamp
+  completedAt?: string          // Completion timestamp
+  approvedAt?: string           // Approval timestamp
+  approvedBy?: string           // Sensei ID who approved
+  timeliness?: 'early' | 'on-time' | 'late' | 'very-late' | 'no-due-time'
+  timelinessModifier?: number   // Timeliness point modifier
+  senseiNote?: string           // Optional sensei feedback
+  senseiNoteAt?: string         // Note timestamp
+}
+```
+
+Core Systems
+
+Authentication Flow
+
+<Steps>
+  <Step title="Sign Up">
+User submits email/password
+Server calls Supabase Auth `createUser`
+Auto-confirms email (no email server configured)
+Returns access token
+  </Step>
+
+  <Step title="Sign In">
+User submits credentials
+Server calls Supabase Auth `signInWithPassword`
+Returns session with access token
+Frontend stores token in memory
+  </Step>
+
+  <Step title="Session Check">
+Frontend sends access token in Authorization header
+Server validates with Supabase Auth `getUser`
+Returns user data if valid
+Frontend loads profile
+  </Step>
+
+  <Step title="Sign Out">
+Frontend calls signout endpoint
+Server calls Supabase Auth `admin.signOut`
+Clears session
+Frontend redirects to landing
+  </Step>
+</Steps>
+
+Point Calculation
+
+Points are calculated using a multi-factor formula:
+
+```typescript
+function calculatePoints(
+  basePoints: number,
+  quality: number,
+  streak: number,
+  timeliness: number,
+  ageCategory: string
+): number {
+  // Quality modifier
+  const qualityMod = getQualityModifier(quality)
+  
+  // Streak bonus
+  const streakBonus = getStreakBonus(streak)
+  
+  // Calculate base with modifiers
+  const base = basePoints * (1 + qualityMod + streakBonus)
+  
+  // Apply timeliness
+  const withTimeliness = base * (1 + timeliness)
+  
+  // Apply age multiplier
+  const ageMultipliers = {
+    grasshopper: 0.7,
+    cricket: 1.0,
+    stickbug: 1.2,
+    mantis: 1.5
+  }
+  
+  const final = withTimeliness * ageMultipliers[ageCategory]
+  
+  return Math.round(final)
+}
+```
+
+Belt Progression
+
+```typescript
+function getBeltLevel(points: number, ageCategory: string): string {
+  // Age multipliers (inverse for requirements)
+  const multipliers = {
+    grasshopper: 0.7,
+    cricket: 1.0,
+    stickbug: 1.2,
+    mantis: 1.5
+  }
+  
+  // Adjust points for fair comparison
+  const adjustedPoints = points / multipliers[ageCategory]
+  
+  // Belt thresholds
+  if (adjustedPoints >= 2500) return 'black'
+  if (adjustedPoints >= 1800) return 'brown'
+  if (adjustedPoints >= 1300) return 'purple'
+  if (adjustedPoints >= 900) return 'blue'
+  if (adjustedPoints >= 600) return 'green'
+  if (adjustedPoints >= 350) return 'orange'
+  if (adjustedPoints >= 150) return 'yellow'
+  return 'white'
+}
+```
+
+Streak Tracking
+
+```typescript
+function checkStreakBreak(profile: Profile): { isBroken: boolean, profile: Profile } {
+  const now = new Date()
+  const lastActive = new Date(profile.lastActiveDate)
+  
+  // Normalize to start of day
+  now.setHours(0, 0, 0, 0)
+  lastActive.setHours(0, 0, 0, 0)
+  
+  const daysSinceActive = Math.floor(
+    (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24)
+  )
+  
+  // Streak breaks if more than 1 day without activity
+  if (daysSinceActive > 1 && profile.streak > 0) {
+    // Check for grace tokens
+    if (profile.graceTokensAvailable > 0) {
+      profile.graceTokensAvailable--
+      // Streak saved!
+      return { isBroken: false, profile }
+    }
+    
+    // Offer streak savior
+    profile.streakSaviorOffered = true
+    return { isBroken: true, profile }
+  }
+  
+  return { isBroken: false, profile }
+}
+```
+
+Security
+
+Identity Verification
+
+Intercom uses HMAC-SHA256 for identity verification:
+
+```typescript
+// Server-side only
+async function generateUserHash(userId: string): Promise<string> {
+  const secret = Deno.env.get('INTERCOM_IDENTITY_VERIFICATION_SECRET')
+  
+  const encoder = new TextEncoder()
+  const data = encoder.encode(userId)
+  const key = encoder.encode(secret)
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data)
+  const hashArray = Array.from(new Uint8Array(signature))
+  const userHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  return userHash
+}
+```
+
+API Security
+
+Authentication: All endpoints require valid access token
+Authorization: Users can only access their own data
+Sensei Access: Senseis can access disciple data
+Service Role Key: Never exposed to frontend
+CORS: Enabled with open headers for frontend access
+
+Performance Optimization
+
+Caching
+
+```typescript
+// Insights caching with automatic invalidation
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+async function getCachedInsights(userId: string) {
+  const cacheKey = `insights:${userId}`
+  const cached = await kv.get(cacheKey)
+  
+  if (cached && cached.timestamp > Date.now() - CACHE_TTL) {
+    return cached.data
+  }
+  
+  const fresh = await generateInsights(userId)
+  await kv.set(cacheKey, { data: fresh, timestamp: Date.now() })
+  
+  return fresh
+}
+
+// Invalidate on task completion
+async function invalidateInsightsCache(userId: string) {
+  await kv.del(`insights:${userId}`)
+}
+```
+
+Pagination
+
+```typescript
+// Tasks endpoint with pagination
+app.get('/tasks', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '50', 10)
+  const offset = parseInt(c.req.query('offset') || '0', 10)
+  
+  let allTasks = await kv.getByPrefix(`task:${userId}:`)
+  
+  const total = allTasks.length
+  const tasks = allTasks.slice(offset, offset + limit)
+  const hasMore = (offset + limit) < total
+  
+  return c.json({ tasks, pagination: { limit, offset, total, hasMore } })
+})
+```
+
+Development Workflow
+
+<Steps>
+  <Step title="Local Setup">
+    ```bash
+    # Clone repository
+    git clone https://github.com/yourusername/taskdojo.git
+    cd taskdojo
+    
+    # Install dependencies
+    npm install
+    
+    # Set up environment variables
+    cp .env.example .env
+    # Edit .env with your Supabase credentials
+    
+    # Start development server
+    npm run dev
+    ```
+  </Step>
+
+  <Step title="Run Tests">
+    ```bash
+    # Run all tests
+    npm test
+    
+    # Run specific test
+    npm test -- point-calculations
+    
+    # Run with coverage
+    npm test -- --coverage
+    ```
+  </Step>
+
+  <Step title="Deploy Edge Functions">
+    ```bash
+    # Deploy to Supabase
+    supabase functions deploy server
+    
+    # Set environment variables
+    supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=your_secret
+    ```
+  </Step>
+
+  <Step title="Build for Production">
+    ```bash
+    # Build frontend
+    npm run build
+    
+    # Preview production build
+    npm run preview
+    ```
+  </Step>
+</Steps>
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup Guide" icon="wrench" href="/technical/setup/environment">
+    Configure your development environment
+  </Card>
+  <Card title="Architecture Deep Dive" icon="sitemap" href="/technical/architecture">
+    Detailed system architecture
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Complete API documentation
+  </Card>
+  <Card title="Testing Guide" icon="vial" href="/technical/development/testing">
+    Write and run tests
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+This documentation is for developers. For user-facing documentation, see the User Guide.
+</Note>
+```

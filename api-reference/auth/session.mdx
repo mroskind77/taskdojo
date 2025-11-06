@@ -1,0 +1,176 @@
+```mdx
+---
+title: 'Check Session'
+api: 'GET /session'
+description: 'Verify if user has an active session'
+---
+
+Endpoint
+
+```
+GET /make-server-4010be06/session
+```
+
+Check if the provided access token is valid and return the associated user.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token from sign in/sign up
+  
+  ```
+  Authorization: Bearer YOUR_ACCESS_TOKEN
+  ```
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="user" type="object | null">
+  User object if session is valid, `null` if invalid
+  
+  <Expandable title="user properties">
+    <ResponseField name="id" type="string">
+      User's unique identifier
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      User's email address
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of account creation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="session" type="null">
+  Returns `null` if no valid session (for consistency with response format)
+</ResponseField>
+
+---
+
+Example Request
+
+```typescript
+const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/session', {
+  method: 'GET',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+})
+
+const data = await response.json()
+
+if (data.user) {
+  console.log('Session valid:', data.user.id)
+} else {
+  console.log('No active session')
+}
+```
+
+---
+
+Example Responses
+
+<ResponseExample>
+```json 200 - Valid Session
+{
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "john@example.com",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+```json 200 - Invalid/Expired Session
+{
+  "session": null
+}
+```
+</ResponseExample>
+
+---
+
+Use Cases
+
+Persistent Login
+
+Check for existing session on app load:
+
+```typescript
+async function checkAuth() {
+  const storedToken = localStorage.getItem('access_token')
+  
+  if (!storedToken) {
+    return { authenticated: false }
+  }
+  
+  const response = await fetch('/session', {
+    headers: { 'Authorization': `Bearer ${storedToken}` }
+  })
+  
+  const data = await response.json()
+  
+  if (data.user) {
+    return { authenticated: true, user: data.user }
+  } else {
+    // Token expired, clear storage
+    localStorage.removeItem('access_token')
+    return { authenticated: false }
+  }
+}
+```
+
+Route Protection
+
+Protect routes that require authentication:
+
+```typescript
+async function protectedRoute() {
+  const session = await checkSession()
+  
+  if (!session.user) {
+    // Redirect to sign in
+    window.location.href = '/signin'
+    return
+  }
+  
+  // Continue with authenticated logic
+}
+```
+
+---
+
+Notes
+
+<Info>
+This endpoint always returns 200 OK, even for invalid sessions. Check the `user` field to determine if session is valid.
+</Info>
+
+<Tip>
+Call this endpoint on app initialization to restore user session from stored access token.
+</Tip>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Sign In" icon="arrow-right-to-bracket" href="/api-reference/auth/signin">
+    Authenticate user
+  </Card>
+  
+  <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
+    Load user profile
+  </Card>
+  
+  <Card title="Sign Out" icon="arrow-right-from-bracket" href="/api-reference/auth/signout">
+    End session
+  </Card>
+</CardGroup>
+```

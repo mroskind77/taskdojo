@@ -1,0 +1,372 @@
+```mdx
+---
+title: Create Task
+api: POST /tasks
+description: Create a new task for a user
+---
+
+Endpoint
+
+```
+POST /make-server-4010be06/tasks
+```
+
+Authentication
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token obtained from sign-in
+</ParamField>
+
+Request Body
+
+<ParamField body="title" type="string" required>
+  The task title (user-visible as "feat")
+  
+  Example: `"Complete morning routine"`
+</ParamField>
+
+<ParamField body="category" type="string" required>
+  Time-of-day category
+  
+  Options: `morning` | `school` | `afterschool` | `nighttime`
+</ParamField>
+
+<ParamField body="points" type="number" required>
+  Base point value for the task
+  
+  Range: 1-20 (recommended)
+  
+  Guidelines:
+Simple routines: 1-3 points
+Standard tasks: 3-7 points
+Complex tasks: 7-15 points
+Major achievements: 15-20 points
+</ParamField>
+
+<ParamField body="icon" type="string" required>
+  Lucide icon name to display with the task
+  
+  Example: `"sunrise"`, `"book"`, `"utensils"`
+  
+  See Lucide Icons for available options
+</ParamField>
+
+<ParamField body="dueTime" type="string" optional>
+  Due time in HH:MM format (24-hour)
+  
+  Example: `"08:00"`, `"14:30"`
+  
+  Enables timeliness bonuses/penalties when set
+</ParamField>
+
+<ParamField body="userId" type="string" optional>
+  User ID to create task for (Senseis only)
+  
+  If omitted, task is created for the authenticated user.
+  
+  Sensei Permission: Can only create tasks for linked disciples
+</ParamField>
+
+Response
+
+<ResponseField name="task" type="object">
+  The created task object
+  
+  <Expandable title="Task Object">
+    <ResponseField name="id" type="string">
+      Unique task identifier
+      
+      Format: `task:{userId}:{timestamp}:{random}`
+    </ResponseField>
+    
+    <ResponseField name="userId" type="string">
+      ID of the user this task belongs to
+    </ResponseField>
+    
+    <ResponseField name="title" type="string">
+      Task title
+    </ResponseField>
+    
+    <ResponseField name="category" type="string">
+      Task category
+    </ResponseField>
+    
+    <ResponseField name="points" type="number">
+      Base point value
+    </ResponseField>
+    
+    <ResponseField name="icon" type="string">
+      Icon name
+    </ResponseField>
+    
+    <ResponseField name="dueTime" type="string | null">
+      Due time if set
+    </ResponseField>
+    
+    <ResponseField name="completed" type="boolean">
+      Completion status (initially false)
+    </ResponseField>
+    
+    <ResponseField name="approved" type="boolean">
+      Approval status (initially false)
+    </ResponseField>
+    
+    <ResponseField name="quality" type="number">
+      Quality rating (initially 0)
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 timestamp of creation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+Examples
+
+Master Creating Task
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  https://{projectId}.supabase.co/functions/v1/make-server-4010be06/tasks \
+  -H "Authorization: Bearer {access_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Complete morning routine",
+    "category": "morning",
+    "points": 5,
+    "icon": "sunrise",
+    "dueTime": "08:00"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${API_URL}/tasks`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      title: 'Complete morning routine',
+      category: 'morning',
+      points: 5,
+      icon: 'sunrise',
+      dueTime: '08:00'
+    })
+  }
+)
+
+const { task } = await response.json()
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    f"{API_URL}/tasks",
+    headers={
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "title": "Complete morning routine",
+        "category": "morning",
+        "points": 5,
+        "icon": "sunrise",
+        "dueTime": "08:00"
+    }
+)
+
+task = response.json()["task"]
+```
+</CodeGroup>
+
+Response:
+```json
+{
+  "task": {
+    "id": "task:user_abc123:1704110400000:xyz789",
+    "userId": "user_abc123",
+    "title": "Complete morning routine",
+    "category": "morning",
+    "points": 5,
+    "icon": "sunrise",
+    "dueTime": "08:00",
+    "completed": false,
+    "approved": false,
+    "quality": 0,
+    "createdAt": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+Sensei Creating Task for Disciple
+
+<CodeGroup>
+```bash cURL
+curl -X POST \
+  https://{projectId}.supabase.co/functions/v1/make-server-4010be06/tasks \
+  -H "Authorization: Bearer {sensei_access_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Brush teeth",
+    "category": "morning",
+    "points": 2,
+    "icon": "sparkles",
+    "dueTime": "07:30",
+    "userId": "disciple_xyz789"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `${API_URL}/tasks`,
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${senseiAccessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      title: 'Brush teeth',
+      category: 'morning',
+      points: 2,
+      icon: 'sparkles',
+      dueTime: '07:30',
+      userId: 'disciple_xyz789'
+    })
+  }
+)
+
+const { task } = await response.json()
+```
+</CodeGroup>
+
+Response:
+```json
+{
+  "task": {
+    "id": "task:disciple_xyz789:1704110400000:abc123",
+    "userId": "disciple_xyz789",
+    "title": "Brush teeth",
+    "category": "morning",
+    "points": 2,
+    "icon": "sparkles",
+    "dueTime": "07:30",
+    "completed": false,
+    "approved": false,
+    "quality": 0,
+    "createdAt": "2024-01-01T12:00:00.000Z"
+  }
+}
+```
+
+Error Responses
+
+<ResponseExample>
+```json 401 Unauthorized
+{
+  "error": "Unauthorized"
+}
+```
+
+```json 403 Forbidden - Sensei Permission
+{
+  "error": "Unauthorized to create tasks for this user"
+}
+```
+
+```json 400 Bad Request - Missing Fields
+{
+  "error": "Missing required fields: title, category, points, icon"
+}
+```
+
+```json 500 Internal Server Error
+{
+  "error": "Failed to create task"
+}
+```
+</ResponseExample>
+
+Permissions
+
+<AccordionGroup>
+  <Accordion title="Master" icon="star">
+    ✅ Can create tasks for themselves
+    
+    ❌ Cannot create tasks for others
+  </Accordion>
+
+  <Accordion title="Sensei" icon="chalkboard-user">
+    ✅ Can create tasks for themselves
+    
+    ✅ Can create tasks for linked disciples
+    
+    ❌ Cannot create tasks for other disciples
+  </Accordion>
+
+  <Accordion title="Disciple" icon="graduation-cap">
+    ✅ Can create tasks for themselves
+    
+    ❌ Cannot create tasks for others
+  </Accordion>
+</AccordionGroup>
+
+Best Practices
+
+<Note>
+Point Guidelines:
+
+Keep points appropriate for task complexity
+Consider age category multipliers
+Simple morning routines: 1-3 points
+Homework assignments: 5-10 points
+Major projects: 15-20 points
+</Note>
+
+<Tip>
+Due Times:
+
+Set realistic due times with buffer
+Account for variability in routine
+Don't over-schedule
+Leave room for flexibility
+</Tip>
+
+<Warning>
+Sensei Usage:
+
+When creating tasks for disciples, ensure:
+The disciple is actually linked to your sensei account
+Points are age-appropriate
+Due times align with the child's schedule
+Task complexity matches their capabilities
+</Warning>
+
+Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="List Tasks" icon="list" href="/api-reference/tasks/list-tasks">
+    View all tasks for a user
+  </Card>
+  <Card title="Complete Task" icon="check" href="/api-reference/tasks/complete-task">
+    Mark a task as complete
+  </Card>
+  <Card title="Delete Task" icon="trash" href="/api-reference/tasks/delete-task">
+    Remove a task
+  </Card>
+  <Card title="Approve Task" icon="thumbs-up" href="/api-reference/tasks/approve-task">
+    Approve a disciple's completed task
+  </Card>
+</CardGroup>
+
+See Also
+
+Preset Tasks - Auto-generated tasks by age category
+Task Categories - Understanding time-of-day categories
+Point Calculation - How points are calculated
+```

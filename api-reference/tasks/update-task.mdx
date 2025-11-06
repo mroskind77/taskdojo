@@ -1,0 +1,193 @@
+```mdx
+---
+title: 'Update Task'
+api: 'PUT /tasks/:id'
+description: 'Modify task properties'
+---
+
+Endpoint
+
+```
+PUT /make-server-4010be06/tasks/{taskId}
+```
+
+Update task details. Users can update their own tasks; senseis can update their disciples' tasks.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token
+</ParamField>
+
+---
+
+Path Parameters
+
+<ParamField path="taskId" type="string" required>
+  Task identifier
+</ParamField>
+
+---
+
+Request Body
+
+<Note>
+All fields optional. Only included fields will be updated.
+</Note>
+
+<ParamField body="title" type="string">
+  Update task title
+</ParamField>
+
+<ParamField body="category" type="string">
+  Update category
+  
+  Options: `morning`, `afterschool`, `nighttime`, `academic`, `creative`, `physical`, `social`, `mindfulness`, `other`
+</ParamField>
+
+<ParamField body="points" type="number">
+  Update base points value
+</ParamField>
+
+<ParamField body="icon" type="string">
+  Update icon identifier
+</ParamField>
+
+<ParamField body="dueTime" type="string | null">
+  Update due time (HH:MM format or ISO 8601), or `null` to remove
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="task" type="object">
+  Updated task object with all fields
+</ResponseField>
+
+---
+
+Example Requests
+
+Update Title and Points
+
+```typescript
+const response = await fetch(`https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/tasks/${taskId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    title: 'Updated Task Title',
+    points: 15
+  })
+})
+
+const { task } = await response.json()
+```
+
+Update Due Time
+
+```typescript
+await fetch(`/tasks/${taskId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    dueTime: '17:30'  // 5:30 PM
+  })
+})
+```
+
+Remove Due Time
+
+```typescript
+await fetch(`/tasks/${taskId}`, {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    dueTime: null  // Remove time constraint
+  })
+})
+```
+
+---
+
+Example Response
+
+```json
+{
+  "task": {
+    "id": "task:user123:1234567890:abc123",
+    "userId": "user123",
+    "title": "Updated Task Title",
+    "category": "academic",
+    "points": 15,
+    "icon": "book",
+    "dueTime": "17:30",
+    "completed": false,
+    "quality": 0,
+    "approved": false,
+    "createdAt": "2024-01-15T08:00:00Z"
+  }
+}
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 404 - Task Not Found
+{
+  "error": "Task not found"
+}
+```
+
+```json 403 - Unauthorized
+{
+  "error": "Unauthorized to update this task"
+}
+```
+
+```json 400 - Invalid Input
+{
+  "error": "Invalid category"
+}
+```
+</ResponseExample>
+
+---
+
+Notes
+
+<Warning>
+Cannot update completed tasks. Once a task is marked `completed: true`, it cannot be edited.
+</Warning>
+
+<Info>
+Senseis can update their disciples' tasks, but not other users' tasks.
+</Info>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Delete Task" icon="trash" href="/api-reference/tasks/delete-task">
+    Remove a task
+  </Card>
+  
+  <Card title="Get Tasks" icon="list" href="/api-reference/tasks/get-tasks">
+    View all tasks
+  </Card>
+</CardGroup>
+```

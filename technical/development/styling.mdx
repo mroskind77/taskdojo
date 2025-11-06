@@ -1,0 +1,620 @@
+```mdx
+---
+title: Styling System
+description: Tailwind CSS and design tokens in Task Dojo
+---
+
+Styling Overview
+
+Task Dojo uses Tailwind CSS v4 with a custom design token system for consistent, maintainable styling.
+
+Key Technologies:
+Tailwind CSS 4.0 - Utility-first CSS framework
+CSS Custom Properties - Design tokens
+shadcn/ui - Pre-built component library
+Google Fonts - Poppins font family
+
+---
+
+Design Tokens
+
+All design tokens are defined in `/styles/globals.css`:
+
+Color Tokens
+
+```css
+:root {
+  /* Brand colors */
+  --primary: #7e22ce;              /* Purple - primary brand color */
+  --primary-foreground: #ffffff;    /* White text on primary */
+  
+  /* Semantic colors */
+  --background: #ffffff;            /* Page background */
+  --foreground: oklch(0.145 0 0);  /* Body text */
+  --card: #ffffff;                  /* Card backgrounds */
+  --destructive: #d4183d;          /* Error/delete actions */
+  
+  /* UI colors */
+  --muted: #ececf0;                /* Subtle backgrounds */
+  --accent: #e9ebef;               /* Accent backgrounds */
+  --border: rgba(0, 0, 0, 0.1);   /* Border color */
+}
+```
+
+Typography Tokens
+
+```css
+:root {
+  --font-family: 'Poppins', sans-serif;
+  --font-size: 16px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+}
+```
+
+Spacing & Radius
+
+```css
+:root {
+  --radius: 0.625rem;              /* Base border radius (10px) */
+  --radius-sm: calc(var(--radius) - 4px);  /* 6px */
+  --radius-md: calc(var(--radius) - 2px);  /* 8px */
+  --radius-lg: var(--radius);              /* 10px */
+  --radius-xl: calc(var(--radius) + 4px);  /* 14px */
+}
+```
+
+---
+
+Using Tailwind Classes
+
+Basic Styling
+
+```tsx
+// Background and text colors
+<div className="bg-background text-foreground">
+  Content
+</div>
+
+// Cards
+<Card className="bg-card text-card-foreground border border-border">
+  <CardContent>Card content</CardContent>
+</Card>
+
+// Primary buttons
+<Button className="bg-primary text-primary-foreground">
+  Primary Action
+</Button>
+
+// Destructive actions
+<Button variant="destructive" className="bg-destructive text-destructive-foreground">
+  Delete
+</Button>
+```
+
+Layout Classes
+
+```tsx
+// Flexbox
+<div className="flex items-center justify-between gap-4">
+  <span>Left</span>
+  <span>Right</span>
+</div>
+
+// Grid
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {items.map(item => <ItemCard key={item.id} item={item} />)}
+</div>
+
+// Spacing
+<div className="p-6 space-y-4">
+  <p>First paragraph</p>
+  <p>Second paragraph (16px gap above)</p>
+</div>
+```
+
+Responsive Design
+
+```tsx
+// Mobile-first responsive classes
+<div className="
+  w-full              // Full width on mobile
+  md:w-1/2           // Half width on tablets
+  lg:w-1/3           // Third width on desktop
+  p-4                // 16px padding on mobile
+  md:p-6             // 24px padding on tablets
+  lg:p-8             // 32px padding on desktop
+">
+  Responsive content
+</div>
+
+// Breakpoints:
+// sm: 640px   (mobile landscape)
+// md: 768px   (tablet)
+// lg: 1024px  (desktop)
+// xl: 1280px  (large desktop)
+// 2xl: 1536px (extra large)
+```
+
+---
+
+Theme Support
+
+Dark Mode
+
+Dark mode automatically switches colors:
+
+```tsx
+// These classes adapt to dark mode automatically
+<div className="bg-background text-foreground">
+  Light background in light mode
+  Dark background in dark mode
+</div>
+
+// Manual dark mode classes
+<div className="bg-white dark:bg-gray-900">
+  Explicitly white in light, gray in dark
+</div>
+```
+
+Dark mode tokens:
+```css
+.dark {
+  --background: oklch(0.145 0 0);   /* Dark gray */
+  --foreground: oklch(0.985 0 0);   /* Light text */
+  --primary: #a855f7;                /* Lighter purple */
+  --card: oklch(0.145 0 0);         /* Dark cards */
+}
+```
+
+---
+
+High Contrast Mode
+
+For accessibility:
+
+```css
+.high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+  --primary: #000000;
+  --border: #000000;
+  /* Maximum contrast for visibility */
+}
+```
+
+Usage:
+```tsx
+import { useAccessibility } from '../utils/accessibility-context'
+
+function Component() {
+  const { settings } = useAccessibility()
+  
+  return (
+    <div className={settings.highContrast ? 'high-contrast' : ''}>
+      Content with optional high contrast
+    </div>
+  )
+}
+```
+
+---
+
+Colorblind-Friendly Theme
+
+```css
+.colorblind {
+  --primary: #0077bb;      /* Blue instead of purple */
+  --accent: #ee7733;       /* Orange instead of pink */
+  --destructive: #cc3311;  /* Red-orange */
+  /* Colors distinguishable for colorblind users */
+}
+```
+
+---
+
+Typography System
+
+Base Typography
+
+Automatic sizing from `globals.css`:
+
+```tsx
+// These get automatic styling from base layer
+<h1>Heading 1</h1>  {/* 2xl size, medium weight */}
+<h2>Heading 2</h2>  {/* xl size, medium weight */}
+<h3>Heading 3</h3>  {/* lg size, medium weight */}
+<h4>Heading 4</h4>  {/* base size, medium weight */}
+<p>Paragraph</p>    {/* base size, normal weight */}
+<label>Label</label> {/* base size, medium weight */}
+```
+
+<Warning>
+Do NOT override typography with Tailwind classes like `text-2xl`, `font-bold`, or `leading-tight` unless explicitly needed. The base layer handles this automatically.
+</Warning>
+
+Custom Typography
+
+Only when needed:
+
+```tsx
+// Override when necessary
+<h1 className="text-4xl font-bold">
+  Extra large heading
+</h1>
+
+// Muted text
+<p className="text-muted-foreground">
+  Secondary information
+</p>
+
+// Small text
+<span className="text-sm">
+  Fine print
+</span>
+```
+
+---
+
+Accessibility Styling
+
+Dyslexia-Friendly Font
+
+```css
+.font-dyslexic * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', cursive, sans-serif !important;
+  letter-spacing: 0.05em;
+  word-spacing: 0.16em;
+  line-height: 1.8 !important;
+}
+```
+
+Usage:
+```tsx
+const { settings } = useAccessibility()
+
+<div className={settings.dyslexiaFont ? 'font-dyslexic' : ''}>
+  Content in dyslexia-friendly font
+</div>
+```
+
+---
+
+Reduced Motion
+
+```css
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+```
+
+Usage:
+```tsx
+const { settings } = useAccessibility()
+
+<div className={settings.reducedMotion ? 'reduce-motion' : ''}>
+  {!settings.reducedMotion && <ConfettiEffect />}
+  Content
+</div>
+```
+
+---
+
+Font Size Scaling
+
+```tsx
+const { settings } = useAccessibility()
+
+// Update root font size
+useEffect(() => {
+  document.documentElement.style.fontSize = `${settings.fontSize}%`
+}, [settings.fontSize])
+
+// All rem-based sizes scale automatically!
+```
+
+---
+
+Component Styling Patterns
+
+shadcn/ui Components
+
+Use variants:
+
+```tsx
+import { Button } from './ui/button'
+
+// Variants
+<Button variant="default">Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// Sizes
+<Button size="sm">Small</Button>
+<Button size="default">Default</Button>
+<Button size="lg">Large</Button>
+<Button size="icon">
+  <Icon />
+</Button>
+```
+
+---
+
+Card Styling
+
+```tsx
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card'
+
+<Card className="hover:shadow-lg transition-shadow">
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+  </CardHeader>
+  <CardContent>
+    Content
+  </CardContent>
+</Card>
+```
+
+---
+
+Badge Styling
+
+```tsx
+import { Badge } from './ui/badge'
+
+<Badge variant="default">Default</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="destructive">Error</Badge>
+<Badge variant="outline">Outline</Badge>
+
+// Belt badges (custom)
+<Badge className="bg-gradient-to-r from-yellow-400 to-orange-500">
+  Yellow Belt
+</Badge>
+```
+
+---
+
+Custom Animations
+
+Transitions
+
+```tsx
+// Hover effects
+<div className="transition-all duration-200 hover:scale-105 hover:shadow-lg">
+  Hover me
+</div>
+
+// Color transitions
+<Button className="transition-colors duration-200 hover:bg-primary/90">
+  Hover for color change
+</Button>
+
+// Transform
+<div className="transition-transform duration-300 hover:translate-y-[-4px]">
+  Lifts on hover
+</div>
+```
+
+Keyframe Animations
+
+```tsx
+// Spin (built-in)
+<Icon className="animate-spin" />
+
+// Pulse (built-in)
+<div className="animate-pulse">Loading...</div>
+
+// Bounce (built-in)
+<div className="animate-bounce">↓</div>
+```
+
+---
+
+Layout Patterns
+
+Centered Content
+
+```tsx
+// Center horizontally
+<div className="flex justify-center">
+  <Card>Centered card</Card>
+</div>
+
+// Center vertically and horizontally
+<div className="flex items-center justify-center min-h-screen">
+  <Card>Centered in viewport</Card>
+</div>
+
+// Container with max width
+<div className="max-w-4xl mx-auto px-4">
+  Content with max width
+</div>
+```
+
+Sidebar Layout
+
+```tsx
+<div className="flex min-h-screen">
+  {/* Sidebar */}
+  <aside className="w-64 bg-sidebar border-r border-sidebar-border">
+    Navigation
+  </aside>
+  
+  {/* Main content */}
+  <main className="flex-1 p-6">
+    Content
+  </main>
+</div>
+```
+
+Grid Layouts
+
+```tsx
+// Responsive grid
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  {items.map(item => <ItemCard key={item.id} item={item} />)}
+</div>
+
+// Auto-fit grid
+<div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
+  Automatically fits columns
+</div>
+```
+
+---
+
+Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Design Tokens" icon="palette">
+    ```tsx
+    // ✅ Good: Use token classes
+    <div className="bg-background text-foreground border-border">
+    
+    // ❌ Avoid: Hard-coded colors
+    <div className="bg-white text-black border-gray-200">
+    ```
+  </Accordion>
+
+  <Accordion title="Mobile-First Responsive" icon="mobile">
+    ```tsx
+    // ✅ Good: Mobile first
+    <div className="w-full md:w-1/2 lg:w-1/3">
+    
+    // ❌ Avoid: Desktop first
+    <div className="w-1/3 md:w-1/2 sm:w-full">
+    ```
+  </Accordion>
+
+  <Accordion title="Respect Base Typography" icon="text">
+    ```tsx
+    // ✅ Good: Let base styles handle it
+    <h1>Heading</h1>
+    
+    // ❌ Avoid: Override unnecessarily
+    <h1 className="text-2xl font-medium">Heading</h1>
+    ```
+  </Accordion>
+
+  <Accordion title="Use Semantic Classes" icon="brackets-curly">
+    ```tsx
+    // ✅ Good: Semantic naming
+    className="task-card hover:task-card-hover"
+    
+    // ❌ Avoid: Long Tailwind chains
+    className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200"
+    ```
+    
+    Extract to component or @apply:
+    
+    ```css
+    @layer components {
+      .task-card {
+        @apply bg-white p-6 rounded-lg shadow-sm border border-border;
+      }
+      .task-card:hover {
+        @apply shadow-md border-border/60;
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Debugging Styles
+
+Browser DevTools
+
+Open DevTools (F12)
+Inspect element
+View computed styles
+Toggle classes on/off
+
+Tailwind Play
+
+Test utilities at play.tailwindcss.com
+
+CSS Conflicts
+
+```tsx
+// Check specificity
+// Tailwind classes have equal specificity
+// Later classes win
+
+// ✅ This works (later wins)
+<div className="bg-red-500 bg-blue-500">  {/* Blue */}
+
+// ⚠️ Inline styles override Tailwind
+<div className="bg-red-500" style={{ background: 'blue' }}>  {/* Blue */}
+```
+
+---
+
+Performance Tips
+
+Purging Unused CSS
+
+Tailwind automatically purges unused classes in production build.
+
+Configure in `tailwind.config.js` (if needed):
+```js
+module.exports = {
+  content: [
+    './App.tsx',
+    './components/*/.tsx',
+  ],
+  // Only includes used classes in production
+}
+```
+
+Avoid Dynamic Classes
+
+```tsx
+// ❌ Bad: Dynamic class (won't purge correctly)
+<div className={`text-${color}-500`}>
+
+// ✅ Good: Complete class names
+<div className={color === 'red' ? 'text-red-500' : 'text-blue-500'}>
+
+// ✅ Better: Use style prop
+<div style={{ color: colorValue }}>
+```
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Structure" icon="shapes" href="/technical/development/component-structure">
+    Apply styles to components
+  </Card>
+  
+  <Card title="Accessibility" icon="universal-access" href="/user-guide/accessibility">
+    Accessible styling practices
+  </Card>
+  
+  <Card title="Testing" icon="vial" href="/technical/development/testing">
+    Test component styling
+  </Card>
+  
+  <Card title="Performance" icon="gauge" href="/technical/performance">
+    Optimize CSS delivery
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Styling is consistent! Use design tokens, respect base typography, and leverage Tailwind's utility classes. Support dark mode, high contrast, and accessibility features out of the box.
+</Check>
+```

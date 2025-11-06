@@ -1,0 +1,385 @@
+```mdx
+---
+title: 'Complete Task'
+api: 'POST /complete-task'
+description: 'Mark a task as complete and award points (Masters only auto-approve)'
+---
+
+Endpoint
+
+```
+POST /make-server-4010be06/complete-task
+```
+
+Complete a task with quality rating. Masters auto-approve and receive points immediately. Disciples submit for sensei approval.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token
+  
+  ```
+  Authorization: Bearer YOUR_ACCESS_TOKEN
+  ```
+</ParamField>
+
+---
+
+Request Body
+
+<ParamField body="taskId" type="string" required>
+  Unique task identifier
+  
+  Example: `"task:user123:1234567890:abc123"`
+</ParamField>
+
+<ParamField body="quality" type="number" default="3">
+  Quality rating (1-5 stars)
+  
+`1` = Poor (-50% points)
+`2` = Fair (-25% points)
+`3` = Good (0% modifier) default
+`4` = Great (+10% points)
+`5` = Excellent (+20% points)
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="task" type="object">
+  Updated task object
+</ResponseField>
+
+<ResponseField name="pointsEarned" type="number">
+  Masters only. Total points earned (with all modifiers applied)
+</ResponseField>
+
+<ResponseField name="basePoints" type="number">
+  Masters only. Base points before modifiers
+</ResponseField>
+
+<ResponseField name="qualityBonus" type="number">
+  Masters only. Points from quality modifier
+</ResponseField>
+
+<ResponseField name="streakBonus" type="number">
+  Masters only. Points from streak bonus
+</ResponseField>
+
+<ResponseField name="timelinessBonus" type="number">
+  Masters only. Points from timeliness modifier
+</ResponseField>
+
+<ResponseField name="timelinessLabel" type="string">
+  Masters only. `early`, `on-time`, `late`, `very-late`, or `no-due-time`
+</ResponseField>
+
+<ResponseField name="currentPoints" type="number">
+  Masters only. User's total points after completion
+</ResponseField>
+
+<ResponseField name="previousBelt" type="string">
+  Masters only. Belt level before completion
+</ResponseField>
+
+<ResponseField name="currentBelt" type="string">
+  Masters only. Belt level after completion
+</ResponseField>
+
+<ResponseField name="beltLevelUp" type="boolean">
+  Masters only. `true` if user advanced to next belt
+</ResponseField>
+
+<ResponseField name="pendingApproval" type="boolean">
+  Disciples only. `true` - task awaits sensei approval
+</ResponseField>
+
+---
+
+Example Requests
+
+Master Completion (Auto-Approve)
+
+```typescript
+const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/complete-task', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    taskId: 'task:user123:1234567890:abc123',
+    quality: 5  // Excellent!
+  })
+})
+
+const data = await response.json()
+
+if (data.beltLevelUp) {
+  showCelebration(data.currentBelt)
+}
+```
+
+Disciple Completion (Submit for Approval)
+
+```typescript
+const response = await fetch('/complete-task', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${discipleAccessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    taskId: 'task:disciple456:1234567890:def456',
+    quality: 4
+  })
+})
+
+const data = await response.json()
+
+if (data.pendingApproval) {
+  toast.success('Submitted for sensei approval!')
+}
+```
+
+---
+
+Example Responses
+
+Master Response
+
+```json
+{
+  "task": {
+    "id": "task:user123:1234567890:abc123",
+    "userId": "user123",
+    "title": "Complete homework",
+    "points": 10,
+    "completed": true,
+    "completedAt": "2024-01-15T16:45:00Z",
+    "quality": 5,
+    "timeliness": "early",
+    "timelinessModifier": 0.10,
+    "approved": true,
+    "approvedBy": "user123",
+    "approvedAt": "2024-01-15T16:45:00Z"
+  },
+  "pointsEarned": 14,
+  "basePoints": 10,
+  "qualityBonus": 2,
+  "streakBonus": 1,
+  "timelinessBonus": 1,
+  "timelinessLabel": "early",
+  "currentPoints": 259,
+  "previousBelt": "yellow",
+  "currentBelt": "orange",
+  "beltLevelUp": true
+}
+```
+
+Disciple Response
+
+```json
+{
+  "task": {
+    "id": "task:disciple456:1234567890:def456",
+    "userId": "disciple456",
+    "title": "Clean bedroom",
+    "points": 5,
+    "completed": true,
+    "completedAt": "2024-01-15T14:30:00Z",
+    "quality": 4,
+    "approved": false
+  },
+  "pendingApproval": true
+}
+```
+
+---
+
+Point Calculation
+
+Formula
+
+```javascript
+// 1. Apply quality modifier
+qualityMultiplier = {
+  1: -0.50,  // -50%
+  2: -0.25,  // -25%
+  3: 0.00,   //   0%
+  4: 0.10,   // +10%
+  5: 0.20    // +20%
+}
+
+qualityAdjusted = basePoints * (1 + qualityMultiplier[quality])
+
+// 2. Add streak bonus (% of base points)
+streakBonus = {
+  0-6 days:   0%,
+  7-13 days:  10%,
+  14-29 days: 20%,
+  30+ days:   30%
+}
+
+streakPoints = Math.round(basePoints * streakBonus)
+
+// 3. Apply timeliness modifier
+timelinessMultiplier = {
+  early:     +0.10,  // +10%
+  on-time:    0.00,  //   0%
+  late:      -0.10,  // -10%
+  very-late: -0.25,  // -25%
+  no-due:     0.00   //   0%
+}
+
+// 4. Calculate total
+total = Math.round((qualityAdjusted + streakPoints) * (1 + timelinessMultiplier))
+```
+
+Example Calculation
+
+Task: 10 points, Quality 5, 14-day streak, completed early
+
+```
+Quality: 10 * (1 + 0.20) = 12 points
+Streak:  10 * 0.20 = 2 points
+Subtotal: 12 + 2 = 14 points
+Timeliness: 14 * (1 + 0.10) = 15.4 → 15 points
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 404 - Task Not Found
+{
+  "error": "Task not found"
+}
+```
+
+```json 403 - Cannot Complete Other User's Task
+{
+  "error": "Unauthorized to complete this task"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized"
+}
+```
+
+```json 500 - Server Error
+{
+  "error": "Failed to complete task"
+}
+```
+</ResponseExample>
+
+---
+
+Complete Workflow
+
+Master Complete Flow
+
+```typescript
+async function handleMasterComplete(taskId: string, quality: number) {
+  const result = await completeTask(taskId, quality)
+  
+  // Update local state optimistically
+  setTasks(prev => prev.map(t => 
+    t.id === taskId ? result.task : t
+  ))
+  
+  // Update profile points
+  setProfile(prev => ({
+    ...prev,
+    points: result.currentPoints,
+    beltLevel: result.currentBelt
+  }))
+  
+  // Show celebration
+  setCelebrationData({
+    pointsEarned: result.pointsEarned,
+    taskTitle: result.task.title,
+    currentPoints: result.currentPoints,
+    currentBelt: result.currentBelt,
+    qualityBonus: result.qualityBonus,
+    streakBonus: result.streakBonus,
+    timelinessBonus: result.timelinessBonus,
+    timelinessLabel: result.timelinessLabel,
+    beltLevelUp: result.beltLevelUp,
+    newBeltLevel: result.currentBelt
+  })
+  
+  setShowCelebration(true)
+}
+```
+
+Disciple Submit Flow
+
+```typescript
+async function handleDiscipleComplete(taskId: string, quality: number) {
+  const result = await completeTask(taskId, quality)
+  
+  // Update task status
+  setTasks(prev => prev.map(t => 
+    t.id === taskId ? { ...t, completed: true, quality } : t
+  ))
+  
+  // Show submission confirmation
+  toast.success('Submitted to your sensei for approval!')
+  
+  // Track event
+  trackIntercomEvent('task-submitted-for-approval', {
+    taskId,
+    quality
+  })
+}
+```
+
+---
+
+Notes
+
+<Info>
+Masters receive points immediately upon completion. Disciples must wait for sensei approval.
+</Info>
+
+<Warning>
+Timeliness modifiers only apply if `dueTime` is set. Complete tasks before the due time for +10% bonus!
+</Warning>
+
+<Tip>
+Streak bonuses encourage daily engagement:
+7 days: +10%
+14 days: +20%
+30 days: +30%
+</Tip>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Approve Task" icon="check-circle" href="/api-reference/tasks/approve-task">
+    Sensei approves disciple task
+  </Card>
+  
+  <Card title="Get Tasks" icon="list" href="/api-reference/tasks/get-tasks">
+    View all tasks
+  </Card>
+  
+  <Card title="Points Guide" icon="coins" href="/user-guide/progression/points-earning">
+    Understanding point system
+  </Card>
+  
+  <Card title="Celebration" icon="party-horn" href="/user-guide/features/celebrations">
+    Completion celebrations
+  </Card>
+</CardGroup>
+```

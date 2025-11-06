@@ -1,0 +1,405 @@
+```mdx
+---
+title: 'API Reference Overview'
+description: 'Complete REST API documentation for Task Dojo. Authentication, endpoints, request/response formats, error handling, and code examples'
+icon: 'code'
+'og:title': 'Task Dojo API Reference - Developer Documentation'
+'og:description': 'Complete REST API documentation for Task Dojo. Auth, profile, tasks, disciples, streaks, AI services, and Intercom integration'
+keywords: ['api reference', 'rest api', 'task dojo api', 'endpoints', 'authentication', 'developer docs', 'api documentation', 'webhook', 'integration']
+---
+
+Base URL
+
+All API endpoints are hosted on Supabase Edge Functions:
+
+```
+https://{projectId}.supabase.co/functions/v1/make-server-4010be06
+```
+
+Replace `{projectId}` with your Supabase project ID.
+
+Authentication
+
+All endpoints (except signup/signin) require authentication via Bearer token:
+
+```bash
+Authorization: Bearer {access_token}
+```
+
+The access token is obtained during sign-in and must be included in all subsequent requests.
+
+<Warning>
+Never use the Service Role Key in frontend code! Always use the public anon key and user access tokens.
+</Warning>
+
+Response Format
+
+Success Response
+
+```json
+{
+  "data": { ... },
+  "message": "Success message (optional)"
+}
+```
+
+Error Response
+
+```json
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+HTTP status codes indicate success or failure:
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Success |
+| `201` | Created |
+| `400` | Bad Request - Invalid parameters |
+| `401` | Unauthorized - Missing or invalid token |
+| `403` | Forbidden - Insufficient permissions |
+| `404` | Not Found - Resource doesn't exist |
+| `500` | Internal Server Error |
+| `503` | Service Unavailable - External service error |
+
+Rate Limiting
+
+<Note>
+Currently, there are no rate limits enforced. However, please be respectful of the service and avoid excessive requests.
+</Note>
+
+Endpoint Categories
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/api-reference/authentication">
+    Sign up, sign in, session management
+  </Card>
+  
+  <Card title="Profile" icon="user" href="/api-reference/profile/get-profile">
+    User profile CRUD operations
+  </Card>
+  
+  <Card title="Tasks" icon="list-check" href="/api-reference/tasks/list-tasks">
+    Task management endpoints
+  </Card>
+  
+  <Card title="Disciples" icon="users" href="/api-reference/disciples/list-disciples">
+    Disciple management for Senseis
+  </Card>
+  
+  <Card title="AI Services" icon="brain" href="/api-reference/ai/decompose-task">
+    AI-powered task decomposition
+  </Card>
+  
+  <Card title="Insights" icon="chart-line" href="/api-reference/insights/get-insights">
+    Analytics and progress insights
+  </Card>
+</CardGroup>
+
+Quick Examples
+
+Sign Up
+
+```bash
+curl -X POST https://{projectId}.supabase.co/functions/v1/make-server-4010be06/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }'
+```
+
+Get Profile
+
+```bash
+curl -X GET https://{projectId}.supabase.co/functions/v1/make-server-4010be06/profile \
+  -H "Authorization: Bearer {access_token}"
+```
+
+Create Task
+
+```bash
+curl -X POST https://{projectId}.supabase.co/functions/v1/make-server-4010be06/tasks \
+  -H "Authorization: Bearer {access_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Complete morning routine",
+    "category": "morning",
+    "points": 5,
+    "icon": "sunrise",
+    "dueTime": "08:00"
+  }'
+```
+
+Complete Task
+
+```bash
+curl -X POST https://{projectId}.supabase.co/functions/v1/make-server-4010be06/complete-task \
+  -H "Authorization: Bearer {access_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskId": "task:user123:1234567890:abc123",
+    "quality": 5
+  }'
+```
+
+Data Types
+
+User Types
+
+```typescript
+type UserType = 'master' | 'sensei' | 'disciple'
+```
+
+master: Independent user, auto-approves tasks
+sensei: Mentor who guides disciples
+disciple: Guided learner who requires approval
+
+Age Categories
+
+```typescript
+type AgeCategory = 'grasshopper' | 'cricket' | 'stickbug' | 'mantis'
+```
+
+grasshopper: 6-9 years (0.7x multiplier)
+cricket: 10-12 years (1.0x multiplier)
+stickbug: 13-17 years (1.2x multiplier)
+mantis: 18+ years (1.5x multiplier)
+
+Task Categories
+
+```typescript
+type TaskCategory = 'morning' | 'school' | 'afterschool' | 'nighttime'
+```
+
+Belt Levels
+
+```typescript
+type BeltLevel = 'white' | 'yellow' | 'orange' | 'green' | 'blue' | 'purple' | 'brown' | 'black'
+```
+
+Quality Ratings
+
+```typescript
+type Quality = 1 | 2 | 3 | 4 | 5
+```
+
+5 stars: Exceptional (+20% points)
+4 stars: Great (+10% points)
+3 stars: Good (no modifier)
+2 stars: Needs improvement (-25% points)
+1 star: Poor (-50% points)
+
+Timeliness
+
+```typescript
+type Timeliness = 'early' | 'on-time' | 'late' | 'very-late' | 'no-due-time'
+```
+
+early: Before due time (+10% points)
+on-time: Within 30 minutes (no modifier)
+late: 30 min - 2 hours (-10% points)
+very-late: 2+ hours (-25% points)
+no-due-time: No due time set (no modifier)
+
+Common Workflows
+
+Master Workflow
+
+<Steps>
+  <Step title="Sign Up & Onboard">
+POST `/signup`
+POST `/profile` (create profile)
+User completes onboarding in UI
+  </Step>
+
+  <Step title="Create & Complete Tasks">
+POST `/tasks` (create task)
+POST `/complete-task` (auto-approved)
+Profile updated with points
+  </Step>
+
+  <Step title="Check Progress">
+GET `/profile` (view points, belt, streak)
+GET `/insights` (view analytics)
+  </Step>
+</Steps>
+
+Sensei Workflow
+
+<Steps>
+  <Step title="Set Up Disciples">
+POST `/signup` (sensei account)
+POST `/profile` (sensei profile)
+POST `/create-disciple` (create disciple accounts)
+  </Step>
+
+  <Step title="Manage Disciple Tasks">
+POST `/tasks` with `userId: discipleId`
+Disciple completes tasks
+POST `/approve-task` (review & approve)
+  </Step>
+
+  <Step title="Monitor Progress">
+GET `/disciples` (list all disciples)
+GET `/insights/disciple/:discipleId`
+Review patterns and adjust
+  </Step>
+</Steps>
+
+Disciple Workflow
+
+<Steps>
+  <Step title="Sign In">
+POST `/signin` (with credentials from Sensei)
+GET `/profile` (load profile)
+  </Step>
+
+  <Step title="Complete Tasks">
+GET `/tasks` (view assigned tasks)
+POST `/complete-task` (mark complete, pending approval)
+Wait for Sensei approval
+  </Step>
+
+  <Step title="Track Progress">
+GET `/profile` (check points after approval)
+View belt progress in UI
+  </Step>
+</Steps>
+
+Error Handling
+
+Common Errors
+
+<AccordionGroup>
+  <Accordion title="401 Unauthorized" icon="lock">
+    Cause: Missing or invalid access token
+    
+    Solution: 
+Check that Authorization header is present
+Verify token is valid (not expired)
+Re-authenticate if needed
+  </Accordion>
+
+  <Accordion title="403 Forbidden" icon="ban">
+    Cause: Insufficient permissions for the resource
+    
+    Solution:
+Verify you're accessing your own data
+Senseis: Confirm the disciple is linked to you
+Check user type matches endpoint requirements
+  </Accordion>
+
+  <Accordion title="404 Not Found" icon="question">
+    Cause: Resource doesn't exist
+    
+    Solution:
+Verify the ID is correct
+Check that the resource hasn't been deleted
+Ensure proper formatting of IDs
+  </Accordion>
+
+  <Accordion title="500 Internal Server Error" icon="triangle-exclamation">
+    Cause: Server-side error
+    
+    Solution:
+Check server logs for details
+Verify all required fields are provided
+Contact support if issue persists
+  </Accordion>
+
+  <Accordion title="503 Service Unavailable" icon="circle-xmark">
+    Cause: External service (AI) is down or misconfigured
+    
+    Solution:
+For AI endpoints: Check API key is configured
+Retry after a short delay
+Use fallback functionality if available
+  </Accordion>
+</AccordionGroup>
+
+Pagination
+
+Endpoints that return lists support pagination:
+
+Query Parameters:
+`limit`: Number of items to return (default: 50, max: 100)
+`offset`: Number of items to skip (default: 0)
+
+Response:
+```json
+{
+  "data": [...],
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "total": 150,
+    "hasMore": true
+  }
+}
+```
+
+Filtering
+
+Task endpoints support filtering:
+
+Query Parameters:
+`filter`: `'pending'` | `'completed'` | `null` (all)
+`userId`: View tasks for specific user (Senseis only)
+
+Example:
+```bash
+GET /tasks?filter=pending&limit=20
+```
+
+Testing
+
+Use the API in development:
+
+```javascript
+const API_URL = 'https://{projectId}.supabase.co/functions/v1/make-server-4010be06'
+
+async function createTask(accessToken, taskData) {
+  const response = await fetch(`${API_URL}/tasks`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(taskData)
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to create task')
+  }
+  
+  return await response.json()
+}
+```
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Sign up, sign in, and session management
+  </Card>
+  <Card title="Profile Endpoints" icon="user" href="/api-reference/profile/get-profile">
+    Manage user profiles
+  </Card>
+  <Card title="Task Endpoints" icon="list-check" href="/api-reference/tasks/list-tasks">
+    Complete task management
+  </Card>
+  <Card title="Technical Docs" icon="book" href="/technical/overview">
+    Architecture and development guide
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+All timestamps are in ISO 8601 format (e.g., `2024-01-15T10:30:00.000Z`)
+</Note>
+```

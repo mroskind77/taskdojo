@@ -1,0 +1,714 @@
+```mdx
+---
+title: Security Guide
+description: Security best practices and implementation details for Task Dojo
+---
+
+Security Overview
+
+Task Dojo implements defense-in-depth security with multiple layers of protection:
+
+Authentication - Supabase Auth with secure session management
+Authorization - Role-based access control (Master/Sensei/Disciple)
+Data Protection - Never expose sensitive keys to frontend
+Identity Verification - Intercom HMAC-SHA256 verification
+Input Validation - Server-side validation on all inputs
+HTTPS - All communication encrypted in transit
+
+---
+
+Authentication System
+
+Supabase Auth
+
+Provider: Supabase Auth (built-in PostgreSQL-backed authentication)
+
+Flow:
+
+```typescript
+// 1. Sign Up (Server-side)
+const { data, error } = await supabase.auth.admin.createUser({
+  email: 'user@example.com',
+  password: 'secure-password',
+  email_confirm: true,  // Auto-confirm (no email server)
+  user_metadata: {
+    name: 'John Doe',
+    userType: 'master',
+    ageCategory: 'mantis'
+  }
+})
+
+// 2. Sign In (Server-side)
+const { data: { session }, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'secure-password'
+})
+
+// Returns: { access_token, refresh_token, expires_at, user }
+
+// 3. Verify Token (Every Request)
+const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+
+if (!user) {
+  return c.json({ error: 'Unauthorized' }, 401)
+}
+```
+
+Password Requirements
+
+Minimum Security:
+6 characters minimum (enforced server-side)
+No complexity requirements (for young users)
+Stored as bcrypt hash by Supabase
+Never logged or exposed
+
+Recommendations:
+8+ characters for adults
+Mix of letters, numbers for security
+Password manager encouraged
+
+---
+
+Authorization & Access Control
+
+Role-Based Access Control (RBAC)
+
+Three User Types:
+
+| Role | Can Access | Cannot Access |
+|------|------------|---------------|
+| Master | Own profile, own tasks | Other users' data |
+| Sensei | Own profile, own tasks, disciples' profiles, disciples' tasks | Other senseis' data, non-disciples |
+| Disciple | Own profile, own tasks | Sensei's data, other disciples' data |
+
+Authorization Checks
+
+Middleware Pattern:
+
+```typescript
+async function requireAuth(c: Context, next: Next) {
+  const token = c.req.header('Authorization')?.split(' ')[1]
+  
+  if (!token) {
+    return c.json({ error: 'Missing authorization token' }, 401)
+  }
+  
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  
+  if (error || !user) {
+    return c.json({ error: 'Invalid or expired token' }, 401)
+  }
+  
+  // Store user in context for downstream handlers
+  c.set('user', user)
+  await next()
+}
+
+// Apply to all routes
+app.use('/make-server-4010be06/*', requireAuth)
+```
+
+Resource-Level Authorization:
+
+```typescript
+app.get('/tasks', async (c) => {
+  const user = c.get('user')
+  const requestedUserId = c.req.query('userId')
+  
+  // Can users access this resource?
+  if (!canAccess(user.id, requestedUserId, user.user_metadata.userType)) {
+    return c.json({ error: 'Forbidden' }, 403)
+  }
+  
+  const tasks = await getTasks(requestedUserId)
+  return c.json({ tasks })
+})
+
+function canAccess(actorId: string, resourceOwnerId: string, userType: string): boolean {
+  // Users can always access their own data
+  if (actorId === resourceOwnerId) return true
+  
+  // Senseis can access disciple data
+  if (userType === 'sensei') {
+    const sensei = await getProfile(actorId)
+    if (sensei.disciples.includes(resourceOwnerId)) return true
+  }
+  
+  return false
+}
+```
+
+---
+
+Secrets Management
+
+Environment Variables
+
+Frontend (.env - Safe to Expose):
+```bash
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbG...  # Read-only public key
+VITE_INTERCOM_APP_ID=app_xxx
+```
+
+Backend (Supabase Secrets - NEVER Expose):
+```bash
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=eyJhbG...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbG...  # ⚠️ CRITICAL: Full database access!
+SUPABASE_DB_URL=postgresql://...
+INTERCOM_IDENTITY_VERIFICATION_SECRET=xxx  # For HMAC
+OPENAI_API_KEY=sk-xxx  # Optional
+ANTHROPIC_API_KEY=sk-xxx  # Optional
+```
+
+<Warning>
+NEVER expose SUPABASE_SERVICE_ROLE_KEY to the frontend!
+
+This key has full database access and can bypass all Row-Level Security policies. Exposing it is a critical security breach.
+</Warning>
+
+Setting Secrets in Supabase
+
+```bash
+One-time setup
+supabase link --project-ref your-project-ref
+
+Set secrets
+supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=your_secret_here
+supabase secrets set OPENAI_API_KEY=sk-xxx
+
+List secrets (values hidden)
+supabase secrets list
+
+Delete secret
+supabase secrets unset OLD_SECRET_NAME
+```
+
+Accessing Secrets in Code
+
+```typescript
+// ✅ Correct: Server-side only
+const apiKey = Deno.env.get('OPENAI_API_KEY')
+
+if (!apiKey) {
+  console.error('OPENAI_API_KEY not configured')
+  return c.json({ error: 'AI service not available' }, 503)
+}
+
+// ❌ WRONG: Never log secrets!
+console.log('API Key:', apiKey)  // DON'T DO THIS!
+
+// ❌ WRONG: Never return secrets to client
+return c.json({ apiKey })  // DON'T DO THIS!
+```
+
+---
+
+Intercom Identity Verification
+
+Why It's Needed
+
+Without verification: Anyone could impersonate any user in Intercom by passing a fake user ID.
+
+With verification: Server generates a cryptographic hash proving user identity.
+
+Implementation
+
+Server-Side (Edge Function):
+
+```typescript
+async function generateUserHash(userId: string): Promise<string> {
+  const secret = Deno.env.get('INTERCOM_IDENTITY_VERIFICATION_SECRET')
+  
+  if (!secret) {
+    throw new Error('Intercom secret not configured')
+  }
+  
+  const encoder = new TextEncoder()
+  const data = encoder.encode(userId)
+  const key = encoder.encode(secret)
+  
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data)
+  const hashArray = Array.from(new Uint8Array(signature))
+  const userHash = hashArray
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  
+  return userHash
+}
+
+// Endpoint
+app.get('/intercom/user-hash', async (c) => {
+  const user = c.get('user')
+  const userHash = await generateUserHash(user.id)
+  
+  return c.json({ userHash })
+})
+```
+
+Client-Side:
+
+```typescript
+// 1. Fetch hash from server
+const response = await fetch(
+  `${API_URL}/intercom/user-hash`,
+  {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  }
+)
+
+const { userHash } = await response.json()
+
+// 2. Initialize Intercom with verified identity
+Intercom('boot', {
+  app_id: INTERCOM_APP_ID,
+  user_id: userId,
+  user_hash: userHash,  // Server-generated, proves identity
+  name: userName,
+  email: userEmail,
+  created_at: Math.floor(new Date(createdAt).getTime() / 1000)
+})
+```
+
+<Info>
+Intercom verifies the hash server-side using the same secret. If it doesn't match, the boot fails and prevents impersonation.
+</Info>
+
+---
+
+Input Validation
+
+Server-Side Validation
+
+Never trust client input! Always validate on the server.
+
+```typescript
+app.post('/tasks', async (c) => {
+  const user = c.get('user')
+  const body = await c.req.json()
+  
+  // Validate required fields
+  if (!body.title || typeof body.title !== 'string') {
+    return c.json({ error: 'Title is required and must be a string' }, 400)
+  }
+  
+  if (!body.category || !['morning', 'school', 'afterschool', 'nighttime'].includes(body.category)) {
+    return c.json({ error: 'Invalid category' }, 400)
+  }
+  
+  if (!body.difficulty || !['easy', 'medium', 'hard', 'epic'].includes(body.difficulty)) {
+    return c.json({ error: 'Invalid difficulty' }, 400)
+  }
+  
+  // Sanitize inputs
+  const task = {
+    id: crypto.randomUUID(),
+    userId: user.id,  // From authenticated user, not client input!
+    title: sanitizeString(body.title, 200),  // Max length
+    category: body.category,
+    difficulty: body.difficulty,
+    points: getPointsForDifficulty(body.difficulty),  // Server-side calculation
+    completed: false,  // Always start as false
+    approved: false,
+    createdAt: new Date().toISOString()  // Server time, not client time
+  }
+  
+  await kv.set(`task:${user.id}:${task.id}`, task)
+  return c.json({ task }, 201)
+})
+
+function sanitizeString(input: string, maxLength: number): string {
+  return input
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[<>]/g, '')  // Remove potential XSS chars
+}
+```
+
+Common Validation Patterns
+
+String Length:
+```typescript
+if (name.length < 1 || name.length > 100) {
+  throw new Error('Name must be 1-100 characters')
+}
+```
+
+Enum Validation:
+```typescript
+const VALID_CATEGORIES = ['morning', 'school', 'afterschool', 'nighttime']
+if (!VALID_CATEGORIES.includes(category)) {
+  throw new Error('Invalid category')
+}
+```
+
+Number Range:
+```typescript
+if (quality < 1 || quality > 5 || !Number.isInteger(quality)) {
+  throw new Error('Quality must be integer 1-5')
+}
+```
+
+UUID Format:
+```typescript
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+if (!UUID_REGEX.test(userId)) {
+  throw new Error('Invalid user ID format')
+}
+```
+
+---
+
+SQL Injection Prevention
+
+Using KV Store: Immune to SQL injection because we're using parameterized queries via Supabase client.
+
+```typescript
+// ✅ Safe: Parameterized query
+const { data } = await supabase
+  .from('kv_store_4010be06')
+  .select('value')
+  .eq('key', userProvidedKey)  // Safely escaped
+
+// ❌ Dangerous (but we don't do this):
+// const query = `SELECT * FROM kv_store WHERE key = '${userInput}'`
+```
+
+If you ever write raw SQL:
+
+```typescript
+// ✅ Use parameterized queries
+const { data } = await supabase.rpc('custom_function', {
+  user_id: userId,  // Passed as parameter
+  search_term: searchTerm
+})
+
+// ❌ NEVER concatenate user input into SQL
+// const sql = `SELECT * FROM users WHERE name = '${userName}'`
+```
+
+---
+
+XSS (Cross-Site Scripting) Prevention
+
+React's Built-In Protection
+
+React automatically escapes JSX content:
+
+```typescript
+// ✅ Safe: React escapes HTML entities
+<div>{userProvidedName}</div>
+
+// Renders as: <script>alert('xss')</script>
+// NOT as: <script>alert('xss')</script>
+```
+
+Dangerous Patterns to Avoid
+
+```typescript
+// ❌ DANGEROUS: dangerouslySetInnerHTML
+<div dangerouslySetInnerHTML={{ __html: userContent }} />
+
+// ❌ DANGEROUS: Direct DOM manipulation
+element.innerHTML = userContent
+
+// ❌ DANGEROUS: eval() or Function()
+eval(userProvidedCode)
+```
+
+Safe HTML Rendering (If Needed)
+
+```typescript
+import DOMPurify from 'dompurify'
+
+// Sanitize before rendering
+const clean = DOMPurify.sanitize(userHtml)
+<div dangerouslySetInnerHTML={{ __html: clean }} />
+```
+
+---
+
+CORS (Cross-Origin Resource Sharing)
+
+Configuration
+
+Server (Hono):
+
+```typescript
+import { cors } from 'npm:hono/cors'
+
+app.use('*', cors({
+  origin: '*',  // Allow all origins (public API)
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 86400,  // 24 hours
+  credentials: false  // No cookies
+}))
+```
+
+Why `origin: '*'`?
+Task Dojo frontend can be hosted anywhere
+No sensitive cookies being sent
+Authorization via Bearer token (not cookies)
+Public API endpoints
+
+<Warning>
+If you ever add cookie-based authentication, change `origin: '*'` to specific domains and set `credentials: true`.
+</Warning>
+
+---
+
+Rate Limiting
+
+Client-Side Debouncing
+
+```typescript
+// Prevent AI breakdown spam
+const [generating, setGenerating] = useState(false)
+
+async function generateBreakdown() {
+  if (generating) return  // Prevent double-click
+  
+  setGenerating(true)
+  try {
+    await callAIAPI()
+  } finally {
+    setTimeout(() => setGenerating(false), 2000)  // 2-second cooldown
+  }
+}
+```
+
+Server-Side Throttling (Future)
+
+```typescript
+// Rate limit per user
+const RATE_LIMITS = {
+  'ai-breakdown': { requests: 10, window: 60 * 1000 },  // 10/minute
+  'create-task': { requests: 100, window: 60 * 1000 }   // 100/minute
+}
+
+async function checkRateLimit(userId: string, action: string): Promise<boolean> {
+  const key = `ratelimit:${userId}:${action}`
+  const limit = RATE_LIMITS[action]
+  
+  const current = await kv.get(key) || { count: 0, resetAt: Date.now() + limit.window }
+  
+  if (Date.now() > current.resetAt) {
+    current.count = 0
+    current.resetAt = Date.now() + limit.window
+  }
+  
+  if (current.count >= limit.requests) {
+    return false  // Rate limit exceeded
+  }
+  
+  current.count++
+  await kv.set(key, current)
+  return true
+}
+```
+
+---
+
+Logging & Monitoring
+
+What to Log
+
+✅ DO Log:
+Authentication attempts (success/failure)
+Authorization failures
+API errors
+Rate limit hits
+Unusual activity patterns
+
+❌ DON'T Log:
+Passwords (even hashed)
+Access tokens
+API keys
+PII without user consent
+Full request bodies (may contain sensitive data)
+
+Logging Pattern
+
+```typescript
+function logSecurityEvent(event: string, metadata: any) {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event,
+    severity: getSeverity(event),
+    ...metadata
+  }))
+}
+
+// Usage
+logSecurityEvent('auth.failed', {
+  email: 'user@example.com',
+  reason: 'invalid_password',
+  ip: c.req.header('x-forwarded-for')
+})
+
+logSecurityEvent('auth.success', {
+  userId: user.id,
+  userType: user.user_metadata.userType
+})
+
+logSecurityEvent('authorization.denied', {
+  userId: user.id,
+  resource: 'task:other-user:task-123',
+  reason: 'not_authorized'
+})
+```
+
+---
+
+Session Management
+
+Token Storage
+
+❌ DON'T store in localStorage:
+Vulnerable to XSS
+Persists across sessions
+
+✅ DO store in memory:
+```typescript
+let accessToken: string | null = null
+
+function setToken(token: string) {
+  accessToken = token
+}
+
+function getToken(): string | null {
+  return accessToken
+}
+
+function clearToken() {
+  accessToken = null
+}
+```
+
+Token Expiration
+
+Default TTL: 1 hour (Supabase default)
+
+Refresh Pattern:
+```typescript
+// Check token expiry before critical operations
+const { data: { session }, error } = await supabase.auth.getSession()
+
+if (session?.expires_at && session.expires_at < Date.now() / 1000) {
+  // Refresh token
+  const { data: { session: newSession }, error } = await supabase.auth.refreshSession()
+  
+  if (newSession) {
+    setToken(newSession.access_token)
+  } else {
+    // Refresh failed, redirect to login
+    window.location.href = '/signin'
+  }
+}
+```
+
+Logout
+
+```typescript
+async function signOut() {
+  // 1. Call server to invalidate session
+  await fetch(`${API_URL}/auth/signout`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  })
+  
+  // 2. Clear client-side token
+  clearToken()
+  
+  // 3. Redirect to landing
+  window.location.href = '/'
+}
+```
+
+---
+
+Security Checklist
+
+Pre-Launch
+
+[ ] All secrets stored in Supabase Secrets (not in code)
+[ ] SERVICE_ROLE_KEY never exposed to frontend
+[ ] CORS configured correctly
+[ ] Authentication required on all sensitive endpoints
+[ ] Authorization checks on resource access
+[ ] Input validation on all endpoints
+[ ] Intercom identity verification enabled
+[ ] No passwords or tokens logged
+[ ] HTTPS enforced (handled by Supabase/Vercel)
+[ ] Rate limiting implemented (or planned)
+
+Regular Audits
+
+[ ] Review access logs for unusual patterns
+[ ] Rotate API keys quarterly
+[ ] Check for dependency vulnerabilities (`npm audit`)
+[ ] Review new endpoints for auth/authz
+[ ] Test authorization bypass attempts
+[ ] Update Supabase/dependencies
+
+---
+
+Incident Response
+
+If Secret is Exposed
+
+Immediate Actions:
+Rotate the compromised secret immediately
+Revoke all active sessions
+Review access logs for unauthorized access
+Notify affected users if data breach occurred
+Update deployment with new secret
+
+Example: Rotate Intercom Secret:
+```bash
+1. Generate new secret in Intercom dashboard
+2. Update Supabase secret
+supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=new_secret_here
+
+3. Deploy functions with new secret
+supabase functions deploy server
+
+4. Monitor for failed verifications
+Users will need to refresh to get new hash
+```
+
+---
+
+Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/auth/overview">
+    Authentication API endpoints
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
+    System architecture
+  </Card>
+  <Card title="Database" icon="database" href="/technical/database">
+    Database schema and access
+  </Card>
+  <Card title="Intercom Setup" icon="messages" href="/technical/integrations/intercom">
+    Intercom integration guide
+  </Card>
+</CardGroup>
+```

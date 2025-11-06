@@ -1,0 +1,425 @@
+```mdx
+---
+title: 'Streak Savior'
+api: 'POST /streak-savior/complete'
+description: 'Complete rescue quest to save broken streak'
+---
+
+Endpoint
+
+```
+POST /make-server-4010be06/streak-savior/complete
+```
+
+Complete the Streak Savior rescue quest to save a broken streak. Requires an available grace token.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token
+</ParamField>
+
+---
+
+Request Body
+
+<ParamField body="rescueTasksCompleted" type="number" required>
+  Number of rescue tasks completed (typically 3)
+  
+  Example: `3`
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="success" type="boolean">
+  `true` if streak was successfully saved
+</ResponseField>
+
+<ResponseField name="streakSaved" type="boolean">
+  `true` - streak was rescued
+</ResponseField>
+
+<ResponseField name="newStreak" type="number">
+  Updated streak count (preserved)
+</ResponseField>
+
+<ResponseField name="graceTokensRemaining" type="number">
+  Remaining grace tokens (0-2)
+</ResponseField>
+
+<ResponseField name="profile" type="object">
+  Updated user profile
+</ResponseField>
+
+---
+
+Example Request
+
+```typescript
+const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/streak-savior/complete', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    rescueTasksCompleted: 3
+  })
+})
+
+const data = await response.json()
+
+if (data.streakSaved) {
+  toast.success(`Streak saved! ${data.graceTokensRemaining} tokens remaining.`)
+  
+  // Track event
+  trackIntercomEvent('streak-savior-used', {
+    streakLength: data.newStreak,
+    tokensRemaining: data.graceTokensRemaining
+  })
+}
+```
+
+---
+
+Example Response
+
+```json
+{
+  "success": true,
+  "streakSaved": true,
+  "newStreak": 14,
+  "graceTokensRemaining": 1,
+  "profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Alex Johnson",
+    "streak": 14,
+    "graceTokensAvailable": 1,
+    "streakSaviorOffered": false,
+    "lastActiveDate": "2024-01-15T10:30:00Z",
+    "points": 245,
+    "beltLevel": "yellow"
+  }
+}
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 400 - No Tokens Available
+{
+  "error": "No grace tokens available",
+  "details": "You've used all your Streak Savior tokens"
+}
+```
+
+```json 400 - Streak Not Broken
+{
+  "error": "Streak is not broken",
+  "details": "You don't need to use Streak Savior"
+}
+```
+
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized"
+}
+```
+
+```json 500 - Server Error
+{
+  "error": "Failed to complete rescue quest"
+}
+```
+</ResponseExample>
+
+---
+
+How Streak Savior Works
+
+1. Streak Breaks
+
+User doesn't complete any tasks for >1 day:
+
+```javascript
+const daysSinceActive = (today - lastActiveDate) / (1000 * 60 * 60 * 24)
+
+if (daysSinceActive > 1 && streak > 0) {
+  // Streak is broken!
+  profile.streakSaviorOffered = true
+}
+```
+
+2. Offer Rescue Quest
+
+When user next logs in and `GET /profile` returns `streakBroken: true`:
+
+```typescript
+const { profile, streakBroken } = await getProfile()
+
+if (streakBroken && profile.graceTokensAvailable > 0) {
+  // Show Streak Savior dialog
+  setShowStreakSavior(true)
+}
+```
+
+3. User Completes Rescue Quest
+
+User must complete 3 "rescue tasks":
+
+```typescript
+const rescueTasks = [
+  { title: 'Reflect on your journey', completed: false },
+  { title: 'Set a new goal', completed: false },
+  { title: 'Complete one task today', completed: false }
+]
+
+// User completes all 3
+if (rescueTasks.every(t => t.completed)) {
+  await completeStreakSavior(3)
+}
+```
+
+4. Streak is Saved
+
+```typescript
+// Backend preserves streak
+profile.streak = originalStreak  // No reset!
+profile.graceTokensAvailable -= 1
+profile.lastActiveDate = new Date()
+profile.streakSaviorOffered = false
+
+await kv.set(`profile:${userId}`, profile)
+```
+
+---
+
+Grace Token System
+
+Token Allocation
+
+Start: 2 tokens
+Resets: Every 7 days (rolling window)
+Usage: 1 token per rescue
+
+Reset Logic
+
+```javascript
+const daysSinceReset = (now - lastGraceTokenReset) / (1000 * 60 * 60 * 24)
+
+if (daysSinceReset >= 7) {
+  profile.graceTokensAvailable = 2  // Reset to 2
+  profile.lastGraceTokenReset = now
+}
+```
+
+Checked automatically on every `GET /profile` call.
+
+---
+
+Complete Workflow
+
+```typescript
+async function handleStreakSavior() {
+  const [task1, setTask1] = useState(false)
+  const [task2, setTask2] = useState(false)
+  const [task3, setTask3] = useState(false)
+  
+  // User completes rescue tasks
+  async function completeRescue() {
+    if (!task1 || !task2 || !task3) {
+      toast.error('Complete all 3 tasks to save your streak')
+      return
+    }
+    
+    try {
+      const response = await fetch('/streak-savior/complete', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rescueTasksCompleted: 3
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save streak')
+      }
+      
+      const data = await response.json()
+      
+      // Update profile
+      setProfile(data.profile)
+      
+      // Show success
+      toast.success(`Your ${data.newStreak}-day streak is saved! ${data.graceTokensRemaining} tokens remaining.`)
+      
+      // Close dialog
+      setShowStreakSavior(false)
+      
+      // Track event
+      trackIntercomEvent('streak-savior-used', {
+        streakLength: data.newStreak,
+        tokensRemaining: data.graceTokensRemaining
+      })
+      
+    } catch (error) {
+      console.error('Streak Savior failed:', error)
+      toast.error('Something went sideways. Try again.')
+    }
+  }
+  
+  return (
+    <Dialog open={showStreakSavior}>
+      <DialogContent>
+        <h2>Rescue Your Streak!</h2>
+        <p>Your {profile.streak}-day streak is in danger!</p>
+        
+        <div>
+          <Checkbox checked={task1} onChange={setTask1}>
+            Reflect on your journey
+          </Checkbox>
+          <Checkbox checked={task2} onChange={setTask2}>
+            Set a new goal
+          </Checkbox>
+          <Checkbox checked={task3} onChange={setTask3}>
+            Complete one task today
+          </Checkbox>
+        </div>
+        
+        <Button 
+          onClick={completeRescue}
+          disabled={!task1 || !task2 || !task3}
+        >
+          Save My Streak ({profile.graceTokensAvailable} tokens)
+        </Button>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+---
+
+Token Management
+
+Check Tokens Before Offering
+
+```typescript
+const { profile, streakBroken } = await getProfile()
+
+if (streakBroken) {
+  if (profile.graceTokensAvailable > 0) {
+    // Offer Streak Savior
+    setShowStreakSavior(true)
+  } else {
+    // No tokens left - streak is lost
+    toast.error(`Your ${profile.streak}-day streak was broken. Start fresh!`)
+    
+    // Reset streak
+    setProfile(prev => ({ ...prev, streak: 0 }))
+  }
+}
+```
+
+Display Token Count
+
+```typescript
+function StreakSaviorButton() {
+  const { profile } = useProfile()
+  
+  return (
+    <div className="streak-tokens">
+      <Shield className="icon" />
+      <span>Rescue Tokens: {profile.graceTokensAvailable}/2</span>
+      <span className="reset-info">
+        Resets in {daysUntilReset(profile.lastGraceTokenReset)} days
+      </span>
+    </div>
+  )
+}
+```
+
+---
+
+Notes
+
+<Info>
+Grace tokens reset every 7 days (rolling window). Check `graceTokensAvailable` before offering Streak Savior.
+</Info>
+
+<Warning>
+Streak Savior can only be used when streak is broken. Calling this endpoint with an active streak will return an error.
+</Warning>
+
+<Tip>
+Track Streak Savior usage via Intercom to understand how often users need rescues and identify engagement issues.
+</Tip>
+
+---
+
+User Experience Tips
+
+<AccordionGroup>
+  <Accordion title="Offer Immediately" icon="bolt">
+    Show Streak Savior dialog as soon as user logs in and `streakBroken: true`.
+    
+    Don't make them navigate to find it!
+  </Accordion>
+
+  <Accordion title="Explain the Stakes" icon="info">
+    Clearly communicate:
+Current streak length
+Tokens available
+Token reset schedule
+What happens if they decline
+  </Accordion>
+
+  <Accordion title="Make it Fun" icon="sparkles">
+    Frame rescue quests as quick, achievable tasks:
+Reflect on progress (30 seconds)
+Set a new goal (1 minute)
+Complete one small task (5 minutes)
+  </Accordion>
+
+  <Accordion title="Celebrate Success" icon="party-horn">
+    When streak is saved:
+Show celebration animation
+Update streak counter immediately
+Display remaining tokens
+Encourage continued engagement
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
+    Check streak status
+  </Card>
+  
+  <Card title="Complete Task" icon="check" href="/api-reference/tasks/complete-task">
+    Keep streak alive
+  </Card>
+  
+  <Card title="Streaks Guide" icon="fire" href="/user-guide/progression/streaks">
+    Understanding streaks
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+API Reference Complete! All endpoints documented with examples, error handling, and best practices. 🎉
+</Check>
+```

@@ -1,0 +1,552 @@
+```mdx
+Focus Timer
+
+Overview
+
+The Focus Timer is a built-in Pomodoro-style timer designed to help you maintain sustained attention during work sessions. It combats time blindness, provides structure, and helps you build deep work capacity—essential skills for executive function.
+
+---
+
+What Is the Focus Timer?
+
+Pomodoro Technique
+
+The Focus Timer implements the Pomodoro Technique, a time management method that breaks work into focused intervals with short breaks.
+
+Standard approach:
+25 minutes of focused work
+5 minutes break
+Repeat 4 times
+Longer break (15-30 minutes)
+
+Task Dojo's implementation:
+Configurable duration (default: 20 minutes)
+Visual countdown (easy to see time remaining)
+Audio completion cue (know when time's up)
+Overtime tracking (continues counting if needed)
+Integration with feats (use for any feat)
+
+---
+
+Why Use the Focus Timer?
+
+Combat Time Blindness
+
+Time blindness is a common executive function challenge:
+Can't sense how much time has passed
+Lose track during work
+Don't know when to stop
+Struggle with time estimates
+
+Focus Timer solves this:
+✅ External time structure
+✅ Visual countdown shows progress
+✅ Audio cue marks completion
+✅ Builds time awareness over time
+
+---
+
+Build Sustained Attention
+
+Benefits of timed sessions:
+Reduces distractions ("Just 20 minutes")
+Creates urgency and focus
+Makes work feel finite and achievable
+Breaks large tasks into manageable chunks
+
+Research evidence: 55% of users prefer visual time blocks for managing time blindness. Focus Timer provides that structure.
+
+---
+
+Track Deep Work
+
+Each completed session:
+Counts toward Focus Master achievement (10 sessions)
+Unlocks Focus Master avatar (🎯)
+Builds your deep work capacity
+Proves you can sustain attention
+
+---
+
+How to Use the Focus Timer
+
+Opening the Timer
+
+Three ways to access:
+
+From Dashboard
+Click "Focus Timer" button
+Opens timer modal
+
+From Feat
+Click any feat
+Select "Use Focus Timer"
+Timer opens with feat title
+
+For Rescue Quests
+Streak Savior modal
+"Start Rescue Quest" button
+Timer opens at 30 minutes
+
+---
+
+Basic Usage
+
+Step-by-step:
+
+Set Duration
+Default: 20 minutes (changeable)
+Click settings gear icon
+Enter custom minutes (5-90)
+Save preference
+
+Start Timer
+Click Play ▶️ button
+Countdown begins
+Timer shows MM:SS format
+Focus on your feat!
+
+Work with Focus
+Eliminate distractions
+Work on one feat only
+Don't multitask
+Trust the timer to manage time
+
+Completion
+Timer hits 00:00
+Audio beep sounds
+Toast notification: "Focus Complete!"
+Celebrate your session! 🎉
+
+---
+
+Timer Controls
+
+Play/Pause ▶️⏸️
+
+Play (Start):
+Begins countdown
+Timer updates every second
+Can pause anytime
+
+Pause:
+Freezes timer
+Take emergency break if needed
+Click Play to resume
+
+Best practice: Avoid pausing unless truly necessary. Part of the discipline is working through the full duration.
+
+---
+
+Reset 🔄
+
+What it does:
+Returns timer to start duration
+Clears progress
+Ready to start fresh
+
+When to use:
+False start (forgot to prep)
+Timer accidentally started
+Want to restart session
+
+---
+
+Settings ⚙️
+
+Customize:
+Default duration (5-90 minutes)
+Saved to localStorage
+Applies to future sessions
+Doesn't affect current session
+
+Popular durations:
+20 minutes (default, good for most)
+25 minutes (classic Pomodoro)
+30 minutes (Rescue Quest default)
+45 minutes (extended focus)
+60 minutes (deep work session)
+
+---
+
+Close ✕
+
+Close timer modal:
+Timer stops (if running)
+Progress lost
+Modal closes
+Return to dashboard/feats
+
+Note: If you close mid-session, the time doesn't count. Finish the session for it to register!
+
+---
+
+Visual Display
+
+Countdown Display
+
+Large, clear numbers:
+```
+20:00  →  19:59  →  19:58  →  ...  →  00:01  →  00:00
+```
+
+Color coding:
+Green: >25% time remaining
+Yellow: 10-25% time remaining
+Orange: <10% time remaining
+Red: <5% time remaining (almost done!)
+
+---
+
+Progress Ring
+
+Visual circle around timer:
+Fills as time elapses
+Shows proportional progress
+Glanceable status check
+Satisfying visual feedback
+
+Example:
+10 minutes into 20-minute session = 50% ring filled
+18 minutes into 20-minute session = 90% ring filled
+
+---
+
+Overtime Mode
+
+What happens at 00:00:
+Timer continues counting (goes negative)
+Shows overtime: "-00:01, -00:02, etc."
+Audio cue plays once at zero
+Visual changes to indicate overtime
+
+Why overtime exists:
+Sometimes you need a few more minutes
+Finish thought/paragraph
+Complete current step
+No pressure to stop instantly
+
+Overtime is okay occasionally, but:
+Goal is to finish within time
+Overtime = re-evaluate duration
+Builds estimation skills
+
+---
+
+Focus Timer Strategies
+
+For Different Feat Types
+
+Homework/Study Sessions
+
+Recommended duration: 20-30 minutes
+
+Process:
+Set up materials before starting timer
+Start timer
+Work only on assigned homework
+Take 5-minute break after
+Repeat if more homework
+
+Why it works: Homework often feels endless. Timer creates finite, achievable chunk.
+
+---
+
+Deep Work / Projects
+
+Recommended duration: 45-60 minutes
+
+Process:
+Eliminate all distractions
+Set longer timer
+Deep, focused work on one project
+Take 10-15 minute break after
+Celebrate significant progress!
+
+Why it works: Deep work requires sustained attention. Timer provides structure and urgency.
+
+---
+
+Chores / Physical Tasks
+
+Recommended duration: 15-20 minutes
+
+Process:
+Start timer
+Work quickly and efficiently
+Race against the clock
+Celebrate when done before time!
+
+Why it works: Chores are more fun with a challenge. Timer adds game-like element.
+
+---
+
+Rescue Quests
+
+Required duration: 30 minutes (fixed)
+
+Process:
+Streak broken, Grace Token available
+Choose Rescue Quest
+Timer opens at 30 minutes
+Complete focused session
+Streak restored! ✅
+
+Why 30 minutes: Rescue Quest should be meaningful effort, not trivial. 30 minutes proves commitment.
+
+---
+
+Building Focus Capacity
+
+Start Small
+
+Week 1: 10-15 minute sessions
+Build the habit
+Get comfortable with timer
+Practice eliminating distractions
+
+Week 2-3: 20-25 minute sessions
+Standard Pomodoro duration
+Sustainable for most work
+Balance focus and breaks
+
+Week 4+: 30-45 minute sessions (as needed)
+For deep work
+When flow state achieved
+Complex tasks requiring sustained attention
+
+Don't start with 60-minute sessions! Build capacity gradually.
+
+---
+
+Track Your Sessions
+
+Goal: 10 completed sessions
+Unlocks Focus Master achievement
+Unlocks Focus Master avatar (🎯)
+Proves deep work capability
+
+How to track:
+Profile shows completed focus sessions
+Achievement progress bar
+Personal tracking (journal/notes)
+
+---
+
+Identify Optimal Duration
+
+Experiment to find your best duration:
+Try 15, 20, 25, 30 minutes
+Notice when focus wanes
+Adjust based on feat type
+Personalize your approach
+
+Signs duration is right:
+✅ Can maintain focus throughout
+✅ Complete meaningful work
+✅ Feel accomplished, not exhausted
+✅ Ready for brief break after
+
+Signs to adjust:
+❌ Can't maintain focus (too long)
+❌ Timer ends before you get into flow (too short)
+❌ Constantly going into overtime (too short)
+❌ Feeling overwhelmed (too long)
+
+---
+
+Focus Timer + AI Breakdown
+
+Powerful Combination
+
+Using both together:
+
+Create Epic feat (e.g., "Write essay")
+Use AI Breakdown → Get 7 sub-feats
+Use Focus Timer for each sub-feat
+Sub-feat 1: "Create outline" - 20 min timer
+Sub-feat 2: "Research sources" - 30 min timer
+Sub-feat 3: "Write intro" - 20 min timer
+etc.
+
+Result:
+Overwhelming feat → Manageable steps
+Each step → Timed, focused work
+Complete one at a time
+Epic feat conquered! 🎉
+
+---
+
+Accessibility Features
+
+Screen Reader Support
+
+Focus Timer is accessible:
+Timer value announced
+Control buttons labeled
+Status changes announced
+Completion cue audio + visual
+
+---
+
+Reduced Motion
+
+With reduced motion enabled:
+Progress ring animation simplified
+Smooth transitions disabled
+Still fully functional
+
+Check: Settings → Accessibility → Reduce Motion
+
+---
+
+Audio Cues
+
+Completion sound:
+Simple beep at 00:00
+Not jarring or disruptive
+Confirms time's up
+Can mute browser if needed
+
+---
+
+Common Timer Patterns
+
+The Pomodoro Cycle
+
+Standard workflow:
+Focus Timer (25 min) → Break (5 min)
+Focus Timer (25 min) → Break (5 min)
+Focus Timer (25 min) → Break (5 min)
+Focus Timer (25 min) → Long Break (15-30 min)
+
+After 4 cycles: Take extended break
+
+Mark feats complete after each timer (if finished)
+
+---
+
+The Deep Work Session
+
+Extended workflow:
+Eliminate ALL distractions
+Focus Timer (45-60 min)
+Single feat or project
+Complete as much as possible
+Long break (15-20 min)
+Repeat if energy permits
+
+For Epic feats and complex work
+
+---
+
+The Sprint
+
+Quick burst workflow:
+Focus Timer (10-15 min)
+Quick, achievable feat
+Immediate completion
+Short break (2-3 min)
+Next sprint!
+
+For Easy feats and momentum building
+
+---
+
+Tips for Success
+
+Before Starting Timer
+
+✅ Gather all materials - Books, notes, computer, etc.  
+✅ Eliminate distractions - Phone away, close tabs, quiet space  
+✅ Use bathroom - Don't need to pause mid-session  
+✅ Get water - Stay hydrated without interruption  
+✅ Know your feat - Clear on what you're working on
+
+---
+
+During Timer
+
+✅ Single-task only - Work on one feat  
+✅ No phone - Seriously, put it away  
+✅ No social media - Close those tabs  
+✅ Stay seated - Minimize movement  
+✅ Trust the timer - It's managing time for you
+
+❌ Don't check time constantly - Let timer do its job  
+❌ Don't multitask - Defeats the purpose  
+❌ Don't pause unnecessarily - Work through to completion
+
+---
+
+After Timer
+
+✅ Take the break - Your brain needs rest  
+✅ Move your body - Stand, stretch, walk  
+✅ Hydrate - Drink water  
+✅ Mark feat complete - If finished  
+✅ Celebrate - You focused for X minutes!
+
+❌ Don't skip breaks - Leads to burnout  
+❌ Don't immediately check phone - Transition mindfully  
+❌ Don't start next timer instantly - Brief pause first
+
+---
+
+For Disciples
+
+Using Timer with Sensei Support
+
+As a Disciple:
+Use Focus Timer for homework feats
+Complete timed session
+Mark feat complete → Request approval
+Sensei sees you used focus technique!
+
+Sensei can:
+Encourage timer use
+Celebrate completed sessions
+Help set appropriate durations
+Model timer use themselves
+
+Example Sensei note:
+"
+I love that you used the Focus Timer! 20 minutes of focused work is huge. Your concentration is growing stronger!"
+
+---
+
+Common Questions
+
+Q: Can I use the timer for multiple feats?  
+A: Yes, but it's designed for one feat per session. Better to do separate timers for each feat.
+
+Q: What if I finish before the timer?  
+A: Great! Mark feat complete, let timer finish, then take your break early.
+
+Q: Can I extend the timer mid-session?  
+A: No. If you need more time, let it go into overtime, or start a new session after a break.
+
+Q: Does using the timer give extra points?  
+A: No, but it counts toward Focus Master achievement (10 sessions).
+
+Q: Can I use an external timer instead?  
+A: Yes! But built-in timer tracks toward achievements.
+
+Q: What if timer stresses me out?  
+A: Try shorter durations (10-15 min) or skip the timer. It's a tool, not a requirement.
+
+---
+
+Related Topics
+
+AI Feat Breakdown - Combine timer with decomposition
+Completing Feats - Mark complete after timer
+Achievements - Focus Master achievement
+Streaks - Rescue Quests use 30-min timer
+
+---
+
+The Focus Timer is your time blindness solution. It provides external structure, builds deep work capacity, and transforms overwhelm into achievable chunks. Start with short sessions, build gradually, and watch your focus capacity grow.
+
+Set the timer. Eliminate distractions. Get to work. 🎯
+```

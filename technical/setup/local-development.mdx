@@ -1,0 +1,734 @@
+```mdx
+---
+title: Local Development
+description: Run Task Dojo on your local development environment
+---
+
+Quick Start
+
+Get Task Dojo running locally in 5 minutes:
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/your-org/task-dojo.git
+    cd task-dojo
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    npm install
+    # or
+    pnpm install
+    ```
+  </Step>
+
+  <Step title="Configure Environment">
+    ```bash
+    cp .env.example .env
+    # Edit .env with your Supabase credentials
+    ```
+  </Step>
+
+  <Step title="Start Development Server">
+    ```bash
+    npm run dev
+    ```
+    
+    Open http://localhost:5173
+  </Step>
+</Steps>
+
+<Check>
+You should see the Task Dojo landing page! 🥋
+</Check>
+
+---
+
+Development Scripts
+
+Available Commands
+
+```bash
+Start development server with hot reload
+npm run dev
+
+Build for production
+npm run build
+
+Preview production build locally
+npm run preview
+
+Run all tests
+npm test
+
+Run tests in watch mode
+npm run test:watch
+
+Run tests with UI
+npm run test:ui
+
+Generate test coverage report
+npm run test:coverage
+```
+
+---
+
+Development Server
+
+Vite Dev Server
+
+Task Dojo uses Vite for lightning-fast development:
+
+```bash
+npm run dev
+```
+
+Features:
+⚡ Instant hot module replacement (HMR)
+🔥 Fast refresh for React components
+📦 Automatic dependency pre-bundling
+🎯 Source maps for debugging
+
+Default Configuration:
+Port: 5173
+Host: localhost
+Open browser: No (manual)
+
+Custom Port
+
+```bash
+Use different port
+npm run dev -- --port 3000
+
+Open browser automatically
+npm run dev -- --open
+
+Expose to network
+npm run dev -- --host
+```
+
+---
+
+Project Structure
+
+```
+task-dojo/
+├── components/          # React components
+│   ├── Dashboard.tsx    # Main dashboard
+│   ├── Tasks.tsx        # Task management
+│   ├── Profile.tsx      # User profile
+│   ├── Disciples.tsx    # Sensei features
+│   ├── ui/              # shadcn/ui components
+│   └── ...
+├── utils/               # Utility functions
+│   ├── api.ts           # API client
+│   ├── belt-colors.ts   # Belt calculations
+│   ├── avatar-skins.ts  # Avatar system
+│   └── ...
+├── styles/              # Global styles
+│   └── globals.css      # Tailwind + tokens
+├── supabase/            # Backend code
+│   └── functions/
+│       └── server/
+│           ├── index.tsx     # Hono server
+│           └── kv_store.tsx  # Data access
+├── tests/               # Test suites
+│   ├── unit/            # Unit tests
+│   ├── integration/     # Integration tests
+│   └── components/      # Component tests
+├── App.tsx              # Root component
+├── package.json         # Dependencies
+├── vite.config.ts       # Vite configuration
+├── vitest.config.ts     # Test configuration
+└── .env                 # Environment variables
+```
+
+---
+
+Backend Development
+
+Edge Functions Local Development
+
+<Steps>
+  <Step title="Install Supabase CLI">
+    ```bash
+    npm install -g supabase
+    ```
+  </Step>
+
+  <Step title="Link to Project">
+    ```bash
+    supabase link --project-ref your-project-ref
+    ```
+  </Step>
+
+  <Step title="Serve Functions Locally">
+    ```bash
+    supabase functions serve server
+    ```
+    
+    Functions available at: `http://localhost:54321/functions/v1/make-server-4010be06`
+  </Step>
+
+  <Step title="Update Frontend .env">
+    Point to local functions:
+    
+    ```bash
+    VITE_API_URL=http://localhost:54321/functions/v1/make-server-4010be06
+    ```
+    
+    Restart `npm run dev`
+  </Step>
+</Steps>
+
+Hot Reload for Functions
+
+Supabase CLI watches for changes automatically:
+
+```bash
+Edit /supabase/functions/server/index.tsx
+Save file
+Function reloads automatically ✨
+```
+
+Function Logs
+
+View real-time logs:
+
+```bash
+In separate terminal
+supabase functions serve server --debug
+
+Or view live logs
+supabase functions logs server --tail
+```
+
+---
+
+Database Development
+
+Accessing Local Database
+
+When using `supabase start`:
+
+```bash
+Start local Supabase stack
+supabase start
+
+Database URL
+postgresql://postgres:postgres@localhost:54322/postgres
+
+Studio (GUI)
+http://localhost:54323
+```
+
+Direct Database Access
+
+```bash
+Connect with psql
+psql postgresql://postgres:postgres@localhost:54322/postgres
+
+Run SQL
+SELECT * FROM kv_store_4010be06 LIMIT 10;
+```
+
+Database Migrations
+
+```bash
+Create migration
+supabase migration new add_new_feature
+
+Apply migrations
+supabase db push
+
+Reset database (careful!)
+supabase db reset
+```
+
+---
+
+Hot Reload & HMR
+
+React Fast Refresh
+
+Vite's HMR preserves component state:
+
+```tsx
+// Edit component
+function Dashboard() {
+  const [count, setCount] = useState(0)  // State preserved!
+  
+  return <div>Count: {count}</div>  // Updates instantly
+}
+```
+
+Works for:
+✅ Component render logic
+✅ Styles (Tailwind classes)
+✅ Props and state
+✅ Hooks
+
+Requires full reload:
+❌ Context providers
+❌ Exported types
+❌ Utility functions with side effects
+
+CSS Hot Reload
+
+Tailwind classes update instantly:
+
+```tsx
+// Change class
+<Button className="bg-blue-500" />  // Blue
+<Button className="bg-red-500" />   // Instantly red!
+```
+
+Debugging HMR Issues
+
+HMR not working?
+
+```bash
+Clear Vite cache
+rm -rf node_modules/.vite
+
+Restart dev server
+npm run dev
+```
+
+Full page reload on every change?
+
+Check for:
+Syntax errors
+Invalid JSX
+Circular dependencies
+Side effects in module scope
+
+---
+
+API Development
+
+API Client Setup
+
+The frontend API client (`utils/api.ts`) automatically uses `.env` configuration:
+
+```typescript
+const API_URL = import.meta.env.VITE_API_URL
+
+export async function getTasks(accessToken: string) {
+  const response = await fetch(`${API_URL}/tasks`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  })
+  return response.json()
+}
+```
+
+Testing API Endpoints
+
+Use curl or Postman:
+
+```bash
+Sign up
+curl -X POST http://localhost:54321/functions/v1/make-server-4010be06/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"test123","name":"Test","userType":"master","ageCategory":"mantis"}'
+
+Get profile
+curl -X GET http://localhost:54321/functions/v1/make-server-4010be06/profile \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+API Response Logging
+
+Enable detailed API logs:
+
+```typescript
+// utils/api.ts
+const DEBUG = import.meta.env.DEV
+
+async function apiCall(endpoint: string, options: RequestInit) {
+  if (DEBUG) {
+    console.log(`🔵 API Request: ${endpoint}`, options)
+  }
+  
+  const response = await fetch(`${API_URL}${endpoint}`, options)
+  
+  if (DEBUG) {
+    console.log(`${response.ok ? '🟢' : '🔴'} API Response:`, await response.clone().json())
+  }
+  
+  return response
+}
+```
+
+---
+
+Browser DevTools
+
+React DevTools
+
+Install React DevTools:
+
+Features:
+🔍 Component tree inspection
+📊 Props and state viewer
+⚡ Performance profiler
+🎯 Component highlighting
+
+Usage:
+Open browser DevTools
+Click "Components" tab
+Inspect Task Dojo components
+
+Vite Plugin Inspect
+
+Visual dependency graph:
+
+```bash
+Add to vite.config.ts (already included)
+import Inspect from 'vite-plugin-inspect'
+
+export default {
+  plugins: [Inspect()]
+}
+
+Visit http://localhost:5173/__inspect/
+```
+
+Network Tab
+
+Monitor API calls:
+Open DevTools → Network
+Filter: "Fetch/XHR"
+Perform action in Task Dojo
+Inspect request/response
+
+---
+
+Common Development Tasks
+
+Adding a New Component
+
+<Steps>
+  <Step title="Create Component File">
+    ```tsx
+    // components/NewFeature.tsx
+    import { useState } from 'react'
+    import { Button } from './ui/button'
+    
+    export function NewFeature() {
+      const [state, setState] = useState('')
+      
+      return (
+        <div>
+          <h2>New Feature</h2>
+          <Button onClick={() => setState('clicked')}>
+            Click Me
+          </Button>
+        </div>
+      )
+    }
+    ```
+  </Step>
+
+  <Step title="Import in Parent">
+    ```tsx
+    // App.tsx
+    import { NewFeature } from './components/NewFeature'
+    
+    function App() {
+      return (
+        <div>
+          <NewFeature />
+        </div>
+      )
+    }
+    ```
+  </Step>
+
+  <Step title="Test in Browser">
+    Component appears instantly with HMR!
+  </Step>
+</Steps>
+
+Adding a New API Endpoint
+
+<Steps>
+  <Step title="Define Server Route">
+    ```typescript
+    // supabase/functions/server/index.tsx
+    app.get('/new-endpoint', async (c) => {
+      const user = c.get('user')
+      
+      // Business logic
+      const data = await getDataFromKV(user.id)
+      
+      return c.json({ data })
+    })
+    ```
+  </Step>
+
+  <Step title="Create API Client Function">
+    ```typescript
+    // utils/api.ts
+    export async function getNewData(accessToken: string) {
+      const response = await fetch(`${API_URL}/new-endpoint`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to fetch')
+      return response.json()
+    }
+    ```
+  </Step>
+
+  <Step title="Use in Component">
+    ```tsx
+    import { getNewData } from '../utils/api'
+    
+    function Component() {
+      useEffect(() => {
+        getNewData(accessToken).then(data => {
+          console.log(data)
+        })
+      }, [])
+    }
+    ```
+  </Step>
+</Steps>
+
+Adding a Tailwind Class
+
+<Steps>
+  <Step title="Define in globals.css">
+    ```css
+    /* styles/globals.css */
+    @layer components {
+      .btn-special {
+        @apply bg-gradient-to-r from-purple-500 to-pink-500 
+               text-white font-bold py-2 px-4 rounded-lg 
+               hover:from-purple-600 hover:to-pink-600 
+               transition-all duration-200;
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Use in Component">
+    ```tsx
+    <button className="btn-special">
+      Special Button
+    </button>
+    ```
+  </Step>
+</Steps>
+
+---
+
+Environment Switching
+
+Development vs Production
+
+```typescript
+// Check environment
+if (import.meta.env.DEV) {
+  console.log('Development mode')
+}
+
+if (import.meta.env.PROD) {
+  console.log('Production mode')
+}
+
+// Environment-specific config
+const config = {
+  apiUrl: import.meta.env.VITE_API_URL,
+  debug: import.meta.env.DEV,
+  intercomEnabled: !!import.meta.env.VITE_INTERCOM_APP_ID
+}
+```
+
+Multiple Environments
+
+Create environment-specific files:
+
+```bash
+.env              # Default (committed as .env.example)
+.env.local        # Local overrides (gitignored)
+.env.development  # Development
+.env.production   # Production
+```
+
+Load specific environment:
+
+```bash
+Development (default)
+npm run dev
+
+Production preview
+npm run build && npm run preview
+```
+
+---
+
+Troubleshooting
+
+Port Already in Use
+
+```bash
+Error: Port 5173 is already in use
+
+Solution 1: Use different port
+npm run dev -- --port 3000
+
+Solution 2: Kill process on port
+macOS/Linux
+lsof -ti:5173 | xargs kill -9
+
+Windows
+netstat -ano | findstr :5173
+taskkill /PID <PID> /F
+```
+
+Module Not Found
+
+```bash
+Error: Cannot find module './Component'
+
+Solution: Check import path
+import { Component } from './components/Component'  # Correct
+import { Component } from './Component'             # Wrong
+
+Rebuild dependencies
+rm -rf node_modules
+npm install
+```
+
+Type Errors
+
+```bash
+Error: Type 'X' is not assignable to type 'Y'
+
+Solution: Regenerate types
+npm run build
+
+Or ignore temporarily (not recommended)
+// @ts-ignore
+```
+
+Stale Cache
+
+```bash
+Clear all caches
+rm -rf node_modules/.vite
+rm -rf dist
+npm run dev
+```
+
+---
+
+Development Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use TypeScript Strictly" icon="shield">
+    ```typescript
+    // ✅ Good: Type everything
+    interface Props {
+      userId: string
+      onComplete: (taskId: string) => void
+    }
+    
+    function Component({ userId, onComplete }: Props) {
+      // ...
+    }
+    
+    // ❌ Avoid: any types
+    function Component(props: any) {
+      // ...
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Keep Components Small" icon="cube">
+    ```tsx
+    // ✅ Good: Single responsibility
+    function TaskCard({ task }: { task: Task }) {
+      return <div>...</div>
+    }
+    
+    function TaskList({ tasks }: { tasks: Task[] }) {
+      return tasks.map(task => <TaskCard key={task.id} task={task} />)
+    }
+    
+    // ❌ Avoid: God components
+    function TasksEverything() {
+      // 500 lines of everything...
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Handle Errors Gracefully" icon="triangle-exclamation">
+    ```typescript
+    // ✅ Good: Try-catch with user feedback
+    async function handleSubmit() {
+      try {
+        await createTask(data)
+        toast.success('Task created!')
+      } catch (error) {
+        console.error('Failed to create task:', error)
+        toast.error('Something went sideways. Let\'s try that again.')
+      }
+    }
+    
+    // ❌ Avoid: Unhandled errors
+    async function handleSubmit() {
+      await createTask(data)  // Might throw!
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use Console Logs Wisely" icon="terminal">
+    ```typescript
+    // ✅ Good: Development only
+    if (import.meta.env.DEV) {
+      console.log('Debug info:', data)
+    }
+    
+    // ❌ Avoid: Production logs
+    console.log('User password:', password)  // NEVER!
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Structure" icon="shapes" href="/technical/development/component-structure">
+    Learn the component architecture
+  </Card>
+  
+  <Card title="Testing" icon="vial" href="/technical/development/testing">
+    Write and run tests
+  </Card>
+  
+  <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
+    Deploy to production
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Explore all API endpoints
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+You're ready to develop! Make changes, watch them update instantly, and build something amazing. 🚀
+</Check>
+```

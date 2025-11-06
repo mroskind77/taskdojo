@@ -1,0 +1,381 @@
+```mdx
+---
+title: 'Core Concepts'
+description: 'Master the key terminology and concepts in Task Dojo: feats, user types, belt progression, streaks, quality ratings, and more'
+icon: 'lightbulb'
+'og:title': 'Task Dojo Core Concepts - Understanding the System'
+'og:description': 'Learn the key concepts: feats vs tasks, Master/Sensei/Disciple roles, belt progression, streak tracking, quality ratings, and gamification mechanics'
+keywords: ['task dojo concepts', 'feats', 'user types', 'belt system', 'streaks', 'quality ratings', 'progression', 'gamification', 'master', 'sensei', 'disciple']
+---
+
+Terminology
+
+Feats (Not Tasks)
+
+Task Dojo uses "feats" instead of "tasks" or "missions" in all user-facing copy. This terminology is intentional and research-backed:
+
+Empowering: Frames activities as achievements
+Action-oriented: Emphasizes accomplishment
+Non-clinical: Avoids language that might feel like treatment
+Motivating: Celebrates what you're capable of
+
+<Note>
+In technical documentation and code, you'll still see "task" - but always use "feat" when addressing users.
+</Note>
+
+User Types
+
+<CardGroup cols={3}>
+  <Card title="Master" icon="star">
+    Independent User
+    
+Manages own feats
+Auto-approves completions
+Earns points immediately
+Cannot have a Sensei
+Any age category allowed
+  </Card>
+  
+  <Card title="Sensei" icon="chalkboard-user">
+    Mentor/Parent
+    
+Guides disciples
+Approves feat completions
+Creates feats for disciples
+Views insights and progress
+Must be Stickbug or Mantis
+  </Card>
+  
+  <Card title="Disciple" icon="graduation-cap">
+    Guided Learner
+    
+Requires Sensei approval
+Completes assigned feats
+Receives guidance
+Must have a Sensei
+Must be Grasshopper or Cricket
+  </Card>
+</CardGroup>
+
+Age Categories
+
+Age categories affect point multipliers and determine which user types are available:
+
+| Category | Age Range | Multiplier | User Types | Purpose |
+|----------|-----------|------------|------------|---------|
+| Grasshopper 🦗 | 6-9 years | 0.7x | Disciple only | Early childhood, basic routines |
+| Cricket 🦗 | 10-12 years | 1.0x | Disciple only | Pre-teen, building independence |
+| Stickbug 🪲 | 13-17 years | 1.2x | All types | Teen, increasing responsibility |
+| Mantis 🦗 | 18+ years | 1.5x | All types | Adult, full complexity |
+
+<Info>
+Why different multipliers? 
+Younger users complete simpler feats worth fewer base points. The multiplier ensures fair belt progression across all ages.
+</Info>
+
+Progression System
+
+Points
+
+Points are the primary currency of progression in Task Dojo. You earn points by completing feats, and points determine your belt level.
+
+Point Calculation Formula:
+
+```
+Base = Feat Points × (1 + Quality + Streak + Timeliness)
+Final = Base × Age Multiplier
+```
+
+Example:
+
+A Stickbug (13-17) completes a 10-point feat with:
+Quality: 5 stars (+20%)
+Streak: 15 days (+20%)
+Timeliness: 15 minutes early (+10%)
+
+```
+Base = 10 × (1 + 0.20 + 0.20 + 0.10) = 10 × 1.50 = 15 points
+Final = 15 × 1.2 (age multiplier) = 18 points earned
+```
+
+Belt Levels
+
+Progress through 8 belt levels based on cumulative points:
+
+<Steps>
+  <Step title="White Belt (0 pts)">
+    Starting belt - Everyone begins here
+  </Step>
+  <Step title="Yellow Belt (150 pts)">
+    First achievement - Building consistency
+  </Step>
+  <Step title="Orange Belt (350 pts)">
+    Developing habits
+  </Step>
+  <Step title="Green Belt (600 pts)">
+    Establishing routines
+  </Step>
+  <Step title="Blue Belt (900 pts)">
+    Mastering fundamentals
+  </Step>
+  <Step title="Purple Belt (1,300 pts)">
+    Advanced practitioner
+  </Step>
+  <Step title="Brown Belt (1,800 pts)">
+    Expert level
+  </Step>
+  <Step title="Black Belt (2,500 pts)">
+    Master of discipline
+  </Step>
+</Steps>
+
+<Tip>
+Points are age-adjusted before checking belt requirements. A Grasshopper earning 700 raw points has 1,000 adjusted points (÷0.7), qualifying them for Blue Belt!
+</Tip>
+
+Streaks
+
+A streak is the number of consecutive days you've completed at least one feat.
+
+Streak Benefits:
+Bonus points on feat completion
+Achievement unlocks at milestones
+Avatar skin unlocks
+Builds momentum and habit
+
+Streak Bonuses:
+7+ days: +10% points
+14+ days: +20% points
+30+ days: +30% points
+
+Streak Rules:
+Complete any feat to maintain streak
+Streak breaks if you miss a day
+Grace Tokens can prevent breaks
+Streak Savior offers last-chance protection
+
+Grace Tokens
+
+Grace Tokens provide streak protection:
+
+Receive: 2 tokens every 7 days (rolling window)
+Use: Automatically applied if you miss a day
+Effect: Preserves your streak
+Limit: Can't stockpile (max 2 at a time)
+
+<Warning>
+Grace Tokens are used automatically. You can't choose when to use them - they activate if you're about to lose your streak.
+</Warning>
+
+Streak Savior
+
+When your streak is about to break and you're out of Grace Tokens, Streak Savior appears:
+
+Offer: One-time option to save your streak
+Cost: -50% points on next feat completion
+When: Only offered once per streak break
+Choice: Accept penalty or start fresh
+
+Quality Ratings
+
+Every completed feat receives a quality rating (1-5 stars):
+
+<AccordionGroup>
+  <Accordion title="⭐⭐⭐⭐⭐ Exceptional (5 stars) - +20% points" icon="star">
+Exceeded expectations
+Completed with excellence
+Went above and beyond
+  </Accordion>
+
+  <Accordion title="⭐⭐⭐⭐ Great (4 stars) - +10% points" icon="star">
+Met expectations well
+Solid, thorough work
+Good attention to detail
+  </Accordion>
+
+  <Accordion title="⭐⭐⭐ Good (3 stars) - No modifier" icon="star">
+Met basic expectations
+Completed as specified
+Standard quality
+  </Accordion>
+
+  <Accordion title="⭐⭐ Needs Improvement (2 stars) - -25% points" icon="star">
+Below expectations
+Rushed or incomplete
+Needs more effort
+  </Accordion>
+
+  <Accordion title="⭐ Poor (1 star) - -50% points" icon="star">
+Did not meet expectations
+Minimal effort
+Significant issues
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+For Masters: You rate your own work honestly.
+
+For Disciples: Your Sensei rates your work and can add guidance notes.
+</Info>
+
+Timeliness
+
+Feats with due times earn bonuses or penalties based on completion time:
+
+| Status | Condition | Modifier | Example |
+|--------|-----------|----------|---------|
+| Early ✅ | Before due time | +10% | Feat due at 8:00 AM, completed at 7:45 AM |
+| On-time ✅ | Within 30 minutes | 0% | Feat due at 8:00 AM, completed at 8:15 AM |
+| Late ⚠️ | 30 min - 2 hours | -10% | Feat due at 8:00 AM, completed at 9:30 AM |
+| Very Late ❌ | 2+ hours | -25% | Feat due at 8:00 AM, completed at 11:00 AM |
+| No Due Time - | No time set | 0% | Feat has no due time |
+
+Feat Categories
+
+Feats are organized into four time-of-day categories:
+
+<Tabs>
+  <Tab title="Morning">
+    Morning Feats 🌅
+Wake-up routines
+Breakfast
+Morning hygiene
+School/work prep
+    
+    Typical time: 6:00 AM - 10:00 AM
+  </Tab>
+  
+  <Tab title="School">
+    School Feats 📚
+Attend classes
+Complete assignments
+Study
+School activities
+    
+    Typical time: 8:00 AM - 3:00 PM
+  </Tab>
+  
+  <Tab title="After-school">
+    After-school Feats ⚽
+Homework
+Extracurriculars
+Chores
+Personal projects
+Dinner
+    
+    Typical time: 3:00 PM - 8:00 PM
+  </Tab>
+  
+  <Tab title="Nighttime">
+    Nighttime Feats 🌙
+Evening routines
+Prepare for tomorrow
+Hygiene
+Bedtime
+    
+    Typical time: 7:00 PM - 10:00 PM
+  </Tab>
+</Tabs>
+
+<Note>
+Categories help organize your day and provide filtering options. They don't affect points or progression.
+</Note>
+
+Approval Workflow (Disciples Only)
+
+For Disciples, completing a feat is a two-step process:
+
+<Steps>
+  <Step title="Disciple Completes Feat">
+Disciple marks feat as complete
+Selects quality rating (optional)
+Feat enters "Pending Approval" state
+No points awarded yet
+  </Step>
+
+  <Step title="Sensei Reviews">
+Sensei receives notification
+Views feat completion
+Can adjust quality rating
+Can add a guidance note
+Approves or rejects
+  </Step>
+
+  <Step title="Points Awarded">
+    If approved:
+Points calculated with final quality rating
+Points added to Disciple's total
+Belt level updated if threshold crossed
+Streak incremented
+    
+    If rejected:
+No points awarded
+Feat returns to incomplete state
+Disciple can try again
+  </Step>
+</Steps>
+
+Achievements
+
+Unlock badges for special accomplishments:
+
+Belt Achievements:
+First Yellow Belt
+Green Belt Master
+Black Belt Sensei
+
+Streak Achievements:
+7-Day Warrior
+30-Day Champion
+100-Day Legend
+
+Feat Achievements:
+First Feat Completed
+10 Perfect Feats (5-star)
+100 Total Feats
+
+Special Achievements:
+Early Bird (10 early completions)
+Focus Master (25 focus sessions)
+Sensei's Favorite (Disciple with 10 5-star approvals)
+
+Avatar System
+
+Customize your appearance with unlockable avatar skins:
+
+Default Avatars (available at start):
+Grasshopper (ages 6-9)
+Cricket (ages 10-12)
+Stickbug (ages 13-17)
+Mantis (ages 18+)
+Dojo Spirit (neutral option)
+
+Unlockable Avatars:
+Flame Spirit: Earn a 30-day streak
+Chronos: Complete 25 focus sessions
+Lightning Bug: Complete 10 feats early
+Shadow Master: Reach Black Belt
+
+<Info>
+More avatar skins are added regularly. Check the Avatar Selector to see what you can unlock next!
+</Info>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="User Guide" icon="book" href="/user-guide/overview">
+    Comprehensive guide to using Task Dojo
+  </Card>
+  <Card title="Account Types" icon="users" href="/user-guide/account-types">
+    Detailed explanation of Masters, Senseis, and Disciples
+  </Card>
+  <Card title="Belt System" icon="award" href="/user-guide/progression/belt-system">
+    Deep dive into progression mechanics
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Technical documentation for developers
+  </Card>
+</CardGroup>
+```

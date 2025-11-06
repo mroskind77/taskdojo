@@ -1,0 +1,796 @@
+```mdx
+---
+title: Component Structure
+description: Frontend component architecture and patterns in Task Dojo
+---
+
+Component Architecture
+
+Task Dojo follows a container/presentational pattern with functional components and React Hooks.
+
+```
+components/
+├── Dashboard.tsx           # Main container (smart component)
+├── Tasks.tsx               # Task management container
+├── Profile.tsx             # Profile container
+├── Disciples.tsx           # Sensei disciple management
+├── Settings.tsx            # Settings container
+├── Onboarding.tsx          # Onboarding flow
+│
+├── TaskCard.tsx            # Presentational (dumb) components
+├── BeltDisplay.tsx
+├── CompletionCelebration.tsx
+├── FocusTimer.tsx
+├── StreakSavior.tsx
+│
+└── ui/                     # shadcn/ui primitives
+    ├── button.tsx
+    ├── card.tsx
+    ├── dialog.tsx
+    └── ...
+```
+
+---
+
+Component Categories
+
+Container Components (Smart)
+
+Responsibilities:
+Fetch data from API
+Manage complex state
+Handle business logic
+Pass data to presentational components
+
+Example: Dashboard.tsx
+
+```typescript
+export function Dashboard({ profile, onRefresh }: DashboardProps) {
+  // State management
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // Data fetching
+  useEffect(() => {
+    getTasks().then(setTasks)
+  }, [])
+  
+  // Business logic
+  const handleComplete = async (taskId: string, quality: number) => {
+    await completeTask(taskId, quality)
+    onRefresh()
+  }
+  
+  // Render presentational components
+  return (
+    <div>
+      {tasks.map(task => (
+        <TaskCard 
+          key={task.id}
+          task={task}
+          onComplete={handleComplete}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+---
+
+Presentational Components (Dumb)
+
+Responsibilities:
+Display UI based on props
+Emit events via callbacks
+No data fetching
+Minimal state (UI state only)
+
+Example: TaskCard.tsx
+
+```typescript
+interface TaskCardProps {
+  task: Task
+  onComplete: (taskId: string) => void
+}
+
+export function TaskCard({ task, onComplete }: TaskCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{task.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={() => onComplete(task.id)}>
+          Complete
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+---
+
+Utility Components
+
+Responsibilities:
+Reusable UI patterns
+Visual feedback
+Animations
+Layout wrappers
+
+Examples:
+BeltDisplay.tsx - Belt level indicator
+CompletionCelebration.tsx - Celebration modal
+StreakSavior.tsx - Rescue quest dialog
+
+---
+
+Key Components
+
+Dashboard.tsx
+
+Main container for task overview:
+
+```typescript
+interface DashboardProps {
+  profile: Profile
+  onRefresh: () => void
+}
+
+function Dashboard({ profile, onRefresh }: DashboardProps) {
+  // State
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [showCelebration, setShowCelebration] = useState(false)
+  
+  // Load tasks
+  useEffect(() => {
+    loadTasks()
+  }, [])
+  
+  // Complete task
+  const handleComplete = async (taskId, quality) => {
+    const result = await completeTask(taskId, quality)
+    setCelebrationData(result)
+    setShowCelebration(true)
+    onRefresh()
+  }
+  
+  return (
+    <>
+      <TasksList tasks={tasks} onComplete={handleComplete} />
+      <CompletionCelebration 
+        open={showCelebration}
+        data={celebrationData}
+        onClose={() => setShowCelebration(false)}
+      />
+    </>
+  )
+}
+```
+
+Features:
+Task list display
+Completion workflow
+Celebration trigger
+Streak Savior integration
+Focus Timer launch
+
+---
+
+Tasks.tsx
+
+Full task management:
+
+```typescript
+function Tasks({ profile, onRefresh }: TasksProps) {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  
+  // Filtered tasks
+  const filteredTasks = useMemo(() => {
+    if (filter === 'pending') return tasks.filter(t => !t.completed)
+    if (filter === 'completed') return tasks.filter(t => t.completed)
+    return tasks
+  }, [tasks, filter])
+  
+  return (
+    <div>
+      {/* Filter buttons */}
+      <FilterButtons activeFilter={filter} onChange={setFilter} />
+      
+      {/* Create task button */}
+      <Button onClick={() => setShowCreateDialog(true)}>
+        Create Task
+      </Button>
+      
+      {/* Task list */}
+      <TasksList tasks={filteredTasks} />
+      
+      {/* Create dialog */}
+      <CreateTaskDialog 
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+      />
+    </div>
+  )
+}
+```
+
+Features:
+CRUD operations (create, read, update, delete)
+Category filtering
+Status filtering
+AI Task Breakdown integration
+Template Library
+
+---
+
+Profile.tsx
+
+User profile display:
+
+```typescript
+function Profile({ profile, onUpdate }: ProfileProps) {
+  return (
+    <div className="space-y-6">
+      {/* Avatar */}
+      <AvatarDisplay 
+        avatar={profile.selectedAvatar}
+        belt={profile.beltLevel}
+      />
+      
+      {/* Stats */}
+      <StatsGrid profile={profile} />
+      
+      {/* Belt progression */}
+      <BeltProgression 
+        currentBelt={profile.beltLevel}
+        points={profile.points}
+        ageCategory={profile.ageCategory}
+      />
+      
+      {/* Achievements */}
+      <Achievements profile={profile} />
+    </div>
+  )
+}
+```
+
+---
+
+Disciples.tsx
+
+Sensei-only component:
+
+```typescript
+function Disciples({ sensei, accessToken, onRefresh }: DisciplesProps) {
+  const [disciples, setDisciples] = useState<Profile[]>([])
+  const [selectedDisciple, setSelectedDisciple] = useState<Profile | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  
+  // Load disciples
+  useEffect(() => {
+    loadDisciples()
+  }, [])
+  
+  // Approve task
+  const handleApprove = async (taskId: string, quality: number, note?: string) => {
+    await approveTask(taskId, true, quality, note)
+    loadDisciples()
+    onRefresh()
+  }
+  
+  return (
+    <div className="grid grid-cols-[300px_1fr] gap-6">
+      {/* Disciple list */}
+      <DiscipleList 
+        disciples={disciples}
+        selected={selectedDisciple}
+        onSelect={setSelectedDisciple}
+      />
+      
+      {/* Disciple details */}
+      {selectedDisciple && (
+        <DiscipleDetail 
+          disciple={selectedDisciple}
+          onApprove={handleApprove}
+        />
+      )}
+    </div>
+  )
+}
+```
+
+Features:
+List disciples
+Create disciple accounts
+View disciple tasks
+Approve/reject completions
+Sensei Notes Library
+Insights dashboard
+
+---
+
+Component Patterns
+
+Lazy Loading
+
+Improve initial load time:
+
+```typescript
+import { lazy, Suspense } from 'react'
+
+// Lazy load heavy components
+const FocusTimer = lazy(() => import('./FocusTimer'))
+const SenseiInsights = lazy(() => import('./SenseiInsights'))
+
+function Dashboard() {
+  return (
+    <>
+      <Suspense fallback={<Skeleton />}>
+        <FocusTimer />
+      </Suspense>
+      
+      <Suspense fallback={<LoadingSpinner />}>
+        <SenseiInsights />
+      </Suspense>
+    </>
+  )
+}
+```
+
+---
+
+Memoization
+
+Optimize expensive calculations:
+
+```typescript
+import { useMemo } from 'react'
+
+function TasksList({ tasks, filter }: Props) {
+  // Only recalculate when dependencies change
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filter === 'completed') return task.completed
+      if (filter === 'pending') return !task.completed
+      return true
+    })
+  }, [tasks, filter])
+  
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+  }, [filteredTasks])
+  
+  return (
+    <div>
+      {sortedTasks.map(task => (
+        <TaskCard key={task.id} task={task} />
+      ))}
+    </div>
+  )
+}
+```
+
+---
+
+Callback Optimization
+
+Prevent unnecessary re-renders:
+
+```typescript
+import { useCallback } from 'react'
+
+function Dashboard() {
+  const [tasks, setTasks] = useState<Task[]>([])
+  
+  // Memoize callback to prevent child re-renders
+  const handleComplete = useCallback(async (taskId: string, quality: number) => {
+    const result = await completeTask(taskId, quality)
+    setTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, completed: true } : task
+    ))
+    return result
+  }, [])  // No dependencies = never changes
+  
+  return <TasksList tasks={tasks} onComplete={handleComplete} />
+}
+```
+
+---
+
+Custom Hooks
+
+Extract reusable logic:
+
+```typescript
+// hooks/useTasks.ts
+function useTasks(userId: string) {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  const loadTasks = useCallback(async () => {
+    try {
+      setLoading(true)
+      const result = await getTasks()
+      setTasks(result.tasks)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
+  
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
+  
+  return { tasks, loading, error, reload: loadTasks }
+}
+
+// Usage:
+function Dashboard() {
+  const { tasks, loading, error, reload } = useTasks(userId)
+  
+  if (loading) return <Skeleton />
+  if (error) return <ErrorMessage error={error} />
+  
+  return <TasksList tasks={tasks} onRefresh={reload} />
+}
+```
+
+---
+
+State Management Patterns
+
+Local Component State
+
+For simple UI state:
+
+```typescript
+function TaskCard({ task }: Props) {
+  const [expanded, setExpanded] = useState(false)
+  
+  return (
+    <Card>
+      <Button onClick={() => setExpanded(!expanded)}>
+        {expanded ? 'Collapse' : 'Expand'}
+      </Button>
+      {expanded && <TaskDetails task={task} />}
+    </Card>
+  )
+}
+```
+
+---
+
+Lifted State
+
+Share state between components:
+
+```typescript
+function Dashboard() {
+  // State lives in parent
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  
+  return (
+    <>
+      <TasksList 
+        tasks={tasks}
+        selectedId={selectedTask?.id}
+        onSelect={setSelectedTask}
+      />
+      
+      <TaskDetail task={selectedTask} />
+    </>
+  )
+}
+```
+
+---
+
+Context for Global State
+
+For app-wide settings:
+
+```typescript
+// accessibility-context.tsx
+const AccessibilityContext = createContext<AccessibilitySettings>(defaultSettings)
+
+export function AccessibilityProvider({ children }: Props) {
+  const [settings, setSettings] = useState<AccessibilitySettings>(() => {
+    const saved = localStorage.getItem('accessibility')
+    return saved ? JSON.parse(saved) : defaultSettings
+  })
+  
+  const updateSettings = (newSettings: Partial<AccessibilitySettings>) => {
+    setSettings(prev => {
+      const updated = { ...prev, ...newSettings }
+      localStorage.setItem('accessibility', JSON.stringify(updated))
+      return updated
+    })
+  }
+  
+  return (
+    <AccessibilityContext.Provider value={{ settings, updateSettings }}>
+      {children}
+    </AccessibilityContext.Provider>
+  )
+}
+
+// Usage:
+function Settings() {
+  const { settings, updateSettings } = useAccessibility()
+  
+  return (
+    <Switch 
+      checked={settings.reducedMotion}
+      onCheckedChange={(checked) => updateSettings({ reducedMotion: checked })}
+    />
+  )
+}
+```
+
+---
+
+Error Handling
+
+Error Boundaries
+
+Catch React errors:
+
+```typescript
+class ErrorBoundary extends Component<Props, State> {
+  state = { hasError: false, error: null }
+  
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+  
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Error boundary caught:', error, errorInfo)
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-fallback">
+          <h2>Something went sideways</h2>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </div>
+      )
+    }
+    
+    return this.props.children
+  }
+}
+
+// Usage:
+<ErrorBoundary>
+  <Dashboard />
+</ErrorBoundary>
+```
+
+---
+
+Async Error Handling
+
+Handle API errors gracefully:
+
+```typescript
+function Dashboard() {
+  const [error, setError] = useState<string | null>(null)
+  
+  const handleComplete = async (taskId: string) => {
+    try {
+      setError(null)
+      await completeTask(taskId)
+      toast.success('Task completed!')
+    } catch (err) {
+      const message = err.message || 'Something went sideways'
+      setError(message)
+      toast.error(message)
+      console.error('Failed to complete task:', err)
+    }
+  }
+  
+  return (
+    <>
+      {error && <Alert variant="destructive">{error}</Alert>}
+      <TasksList onComplete={handleComplete} />
+    </>
+  )
+}
+```
+
+---
+
+Performance Optimization
+
+Virtualization (Future)
+
+For very long lists:
+
+```typescript
+import { useVirtualizer } from '@tanstack/react-virtual'
+
+function TasksList({ tasks }: Props) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,  // Estimated item height
+  })
+  
+  return (
+    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
+      <div style={{ height: virtualizer.getTotalSize() }}>
+        {virtualizer.getVirtualItems().map(item => (
+          <div key={item.key} style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            transform: `translateY(${item.start}px)`
+          }}>
+            <TaskCard task={tasks[item.index]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+Code Splitting by Route
+
+Split code by user journey:
+
+```typescript
+const Dashboard = lazy(() => import('./Dashboard'))
+const Profile = lazy(() => import('./Profile'))
+const Tasks = lazy(() => import('./Tasks'))
+const Settings = lazy(() => import('./Settings'))
+
+function App() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </Suspense>
+  )
+}
+```
+
+---
+
+Component Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep Components Small" icon="minimize">
+    Target: < 200 lines per component
+    
+    ```typescript
+    // ✅ Good: Small, focused component
+    function TaskCard({ task }: Props) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>{task.title}</CardTitle>
+          </CardHeader>
+        </Card>
+      )
+    }
+    
+    // ❌ Avoid: 500-line god component
+    ```
+  </Accordion>
+
+  <Accordion title="Single Responsibility" icon="target">
+    Each component does one thing well
+    
+    ```typescript
+    // ✅ Good: Separate concerns
+    <TaskCard task={task} />
+    <TaskActions task={task} onComplete={handleComplete} />
+    <TaskDetails task={task} />
+    
+    // ❌ Avoid: TaskCardEverything
+    ```
+  </Accordion>
+
+  <Accordion title="Prop Drilling Prevention" icon="arrows-turn-to-dots">
+    Use context for deeply nested props
+    
+    ```typescript
+    // ✅ Good: Context for deep props
+    const { user } = useAuth()
+    
+    // ❌ Avoid: Passing through 5 levels
+    <A user={user}>
+      <B user={user}>
+        <C user={user}>
+          <D user={user} />
+        </C>
+      </B>
+    </A>
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript Everything" icon="code">
+    Type all props and state
+    
+    ```typescript
+    // ✅ Good: Explicit types
+    interface Props {
+      task: Task
+      onComplete: (id: string) => void
+    }
+    
+    // ❌ Avoid: any
+    function Component(props: any) {}
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Component Testing
+
+See Testing Guide for full details:
+
+```typescript
+import { render, screen } from '@testing-library/react'
+import { TaskCard } from './TaskCard'
+
+describe('TaskCard', () => {
+  it('should render task title', () => {
+    render(<TaskCard task={{ title: 'Test Task' }} />)
+    expect(screen.getByText('Test Task')).toBeInTheDocument()
+  })
+})
+```
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="State Management" icon="database" href="/technical/development/state-management">
+    Deep dive into state patterns
+  </Card>
+  
+  <Card title="Styling System" icon="palette" href="/technical/development/styling">
+    Tailwind and design system
+  </Card>
+  
+  <Card title="Testing" icon="vial" href="/technical/development/testing">
+    Test components effectively
+  </Card>
+  
+  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
+    Overall system design
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Components are the building blocks of Task Dojo. Keep them small, typed, and tested. Optimize with memoization and lazy loading. Follow the container/presentational pattern for clear separation of concerns.
+</Check>
+```

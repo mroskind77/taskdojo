@@ -1,0 +1,114 @@
+```mdx
+---
+title: 'Delete Task'
+api: 'DELETE /tasks/:id'
+description: 'Permanently delete a task'
+---
+
+Endpoint
+
+```
+DELETE /make-server-4010be06/tasks/{taskId}
+```
+
+Permanently delete a task. Cannot be undone.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token
+</ParamField>
+
+---
+
+Path Parameters
+
+<ParamField path="taskId" type="string" required>
+  Task identifier to delete
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="success" type="boolean">
+  `true` if deletion was successful
+</ResponseField>
+
+---
+
+Example Request
+
+```typescript
+const response = await fetch(`https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/tasks/${taskId}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+})
+
+const { success } = await response.json()
+
+if (success) {
+  // Remove from local state
+  setTasks(prev => prev.filter(t => t.id !== taskId))
+  toast.success('Task deleted')
+}
+```
+
+---
+
+Example Response
+
+```json
+{
+  "success": true
+}
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 404 - Task Not Found
+{
+  "error": "Task not found"
+}
+```
+
+```json 403 - Unauthorized
+{
+  "error": "Unauthorized to delete this task"
+}
+```
+</ResponseExample>
+
+---
+
+Notes
+
+<Warning>
+Deletion is permanent. Consider adding a confirmation dialog before calling this endpoint.
+</Warning>
+
+<Tip>
+Senseis can delete their disciples' tasks.
+</Tip>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Task" icon="plus" href="/api-reference/tasks/create-task">
+    Create a new task
+  </Card>
+  
+  <Card title="Get Tasks" icon="list" href="/api-reference/tasks/get-tasks">
+    View remaining tasks
+  </Card>
+</CardGroup>
+```

@@ -1,0 +1,244 @@
+```json
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Task Dojo Documentation",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg",
+    "href": "https://taskdojo.app"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#7e22ce",
+    "light": "#a855f7",
+    "dark": "#6b21a8",
+    "anchors": {
+      "from": "#7e22ce",
+      "to": "#a855f7"
+    },
+    "background": {
+      "dark": "#0f0f0f",
+      "light": "#ffffff"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "https://app.intercom.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Launch App",
+    "url": "https://taskdojo.app",
+    "style": "roundedRectangle"
+  },
+  "tabs": [
+    {
+      "name": "User Guide",
+      "url": "user-guide"
+    },
+    {
+      "name": "Technical",
+      "url": "technical"
+    },
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Community",
+      "icon": "discord",
+      "url": "https://discord.gg/taskdojo"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/taskdojo/taskdojo"
+    },
+    {
+      "name": "Support",
+      "icon": "headset",
+      "url": "https://app.intercom.com"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "core-concepts"
+      ]
+    },
+    {
+      "group": "User Guide",
+      "pages": [
+        "user-guide/overview",
+        "user-guide/onboarding",
+        "user-guide/account-types",
+        "user-guide/age-categories",
+        {
+          "group": "Managing Feats",
+          "pages": [
+            "user-guide/feats/creating-feats",
+            "user-guide/feats/completing-feats",
+            "user-guide/feats/categories",
+            "user-guide/feats/feat-breakdown"
+          ]
+        },
+        {
+          "group": "Progression",
+          "pages": [
+            "user-guide/progression/points-earning",
+            "user-guide/progression/belt-system",
+            "user-guide/progression/streaks",
+            "user-guide/progression/achievements"
+          ]
+        },
+        {
+          "group": "Features",
+          "pages": [
+            "user-guide/features/focus-timer",
+            "user-guide/features/avatar-customization",
+            "user-guide/accessibility"
+          ]
+        },
+        {
+          "group": "For Senseis",
+          "pages": [
+            "user-guide/sensei/overview",
+            "user-guide/sensei/managing-disciples",
+            "user-guide/sensei/approving-feats",
+            "user-guide/sensei/insights"
+          ]
+        },
+        "user-guide/troubleshooting"
+      ]
+    },
+    {
+      "group": "Technical Documentation",
+      "pages": [
+        "technical/overview",
+        "technical/architecture",
+        "technical/database",
+        "technical/security",
+        {
+          "group": "Setup & Configuration",
+          "pages": [
+            "technical/setup/environment",
+            "technical/setup/local-development",
+            "technical/setup/deployment"
+          ]
+        },
+        {
+          "group": "Development",
+          "pages": [
+            "technical/development/testing",
+            "technical/development/component-structure",
+            "technical/development/state-management",
+            "technical/development/styling",
+            "technical/development/data-access"
+          ]
+        },
+        {
+          "group": "Integrations",
+          "pages": [
+            "technical/integrations/intercom",
+            "technical/integrations/ai-services"
+          ]
+        },
+        "technical/performance",
+        "technical/monitoring"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview",
+        {
+          "group": "Authentication",
+          "pages": [
+            "api-reference/auth/signup",
+            "api-reference/auth/signin",
+            "api-reference/auth/session",
+            "api-reference/auth/signout"
+          ]
+        },
+        {
+          "group": "Profile",
+          "pages": [
+            "api-reference/profile/create-profile",
+            "api-reference/profile/get-profile",
+            "api-reference/profile/update-profile"
+          ]
+        },
+        {
+          "group": "Tasks",
+          "pages": [
+            "api-reference/tasks/get-tasks",
+            "api-reference/tasks/create-task",
+            "api-reference/tasks/complete-task",
+            "api-reference/tasks/update-task",
+            "api-reference/tasks/delete-task",
+            "api-reference/tasks/approve-task"
+          ]
+        },
+        {
+          "group": "Disciples",
+          "pages": [
+            "api-reference/disciples/get-disciples",
+            "api-reference/disciples/create-disciple"
+          ]
+        },
+        {
+          "group": "Streaks",
+          "pages": [
+            "api-reference/streaks/streak-savior"
+          ]
+        },
+        {
+          "group": "AI Services",
+          "pages": [
+            "api-reference/ai/decompose-task"
+          ]
+        },
+        {
+          "group": "Intercom",
+          "pages": [
+            "api-reference/intercom/user-hash"
+          ]
+        }
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/taskdojo/taskdojo",
+    "discord": "https://discord.gg/taskdojo",
+    "twitter": "https://twitter.com/taskdojo"
+  },
+  "backgroundImage": "/images/background.png",
+  "analytics": {
+    "posthog": {
+      "apiKey": "phc_placeholder"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "search": {
+    "prompt": "Search Task Dojo docs..."
+  },
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "metadata": {
+    "og:image": "https://taskdojo.app/og-image.png",
+    "og:description": "Gamified task management for ADHD, autism, and executive function support",
+    "twitter:site": "@taskdojo"
+  }
+}
+```

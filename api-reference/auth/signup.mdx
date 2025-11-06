@@ -1,0 +1,297 @@
+```mdx
+---
+title: "Sign Up"
+api: "POST /make-server-4010be06/signup"
+description: "Create a new user account"
+---
+
+Endpoint
+
+```
+POST /make-server-4010be06/signup
+```
+
+Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address. Must be unique and valid format.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password. Minimum 6 characters.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  User's display name.
+</ParamField>
+
+<ParamField body="userType" type="string" required>
+  Account type: `master`, `sensei`, or `disciple`.
+  
+master: Independent user
+sensei: Mentor who manages disciples
+disciple: User who requires sensei approval
+</ParamField>
+
+<ParamField body="ageCategory" type="string" required>
+  Age bracket for point multipliers:
+  
+`grasshopper`: 5-8 years (1.0x multiplier)
+`cricket`: 9-12 years (1.2x multiplier)
+`stickbug`: 13-15 years (1.5x multiplier)
+`mantis`: 16+ years (2.0x multiplier)
+</ParamField>
+
+<ParamField body="senseiId" type="string">
+  Required for `disciple` accounts. The sensei's user ID.
+</ParamField>
+
+<ParamField body="selectedAvatar" type="string">
+  Initial avatar ID. Defaults to age-appropriate avatar if not provided.
+</ParamField>
+
+Response
+
+<ResponseField name="user" type="object">
+  Created user object from Supabase Auth
+  
+  <Expandable title="user properties">
+    <ResponseField name="id" type="string">
+      Unique user ID (UUID)
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      User's email address
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="string">
+      Account creation timestamp (ISO 8601)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="session" type="object">
+  Authentication session
+  
+  <Expandable title="session properties">
+    <ResponseField name="access_token" type="string">
+      JWT access token for authenticated requests
+    </ResponseField>
+    
+    <ResponseField name="refresh_token" type="string">
+      Token for refreshing expired access tokens
+    </ResponseField>
+    
+    <ResponseField name="expires_at" type="number">
+      Unix timestamp when access token expires
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="profile" type="object">
+  Created user profile
+  
+  <Expandable title="profile properties">
+    <ResponseField name="id" type="string">
+      User ID (matches auth user)
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Display name
+    </ResponseField>
+    
+    <ResponseField name="userType" type="string">
+      Account type
+    </ResponseField>
+    
+    <ResponseField name="ageCategory" type="string">
+      Age category
+    </ResponseField>
+    
+    <ResponseField name="points" type="number">
+      Starting points (0)
+    </ResponseField>
+    
+    <ResponseField name="beltLevel" type="string">
+      Starting belt (white)
+    </ResponseField>
+    
+    <ResponseField name="streak" type="number">
+      Starting streak (0)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+Request Example
+
+<RequestExample>
+```bash cURL
+curl -X POST https://your-project.supabase.co/functions/v1/make-server-4010be06/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "alex@example.com",
+    "password": "secure123",
+    "name": "Alex",
+    "userType": "master",
+    "ageCategory": "cricket",
+    "selectedAvatar": "cricket"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(`${API_URL}/signup`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    email: 'alex@example.com',
+    password: 'secure123',
+    name: 'Alex',
+    userType: 'master',
+    ageCategory: 'cricket',
+    selectedAvatar: 'cricket'
+  })
+})
+
+const data = await response.json()
+```
+
+```python Python
+import requests
+
+response = requests.post(
+  f"{API_URL}/signup",
+  json={
+    "email": "alex@example.com",
+    "password": "secure123",
+    "name": "Alex",
+    "userType": "master",
+    "ageCategory": "cricket",
+    "selectedAvatar": "cricket"
+  }
+)
+
+data = response.json()
+```
+</RequestExample>
+
+Response Example
+
+<ResponseExample>
+```json Success (201)
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "alex@example.com",
+    "created_at": "2024-02-10T15:30:00.000Z"
+  },
+  "session": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "v1.MRjFEF...",
+    "expires_at": 1707580200
+  },
+  "profile": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "alex@example.com",
+    "name": "Alex",
+    "userType": "master",
+    "ageCategory": "cricket",
+    "points": 0,
+    "beltLevel": "white",
+    "streak": 0,
+    "selectedAvatar": "cricket",
+    "createdAt": "2024-02-10T15:30:00.000Z"
+  }
+}
+```
+
+```json Error - Email Already Exists (400)
+{
+  "error": "User already registered"
+}
+```
+
+```json Error - Invalid Password (400)
+{
+  "error": "Password must be at least 6 characters"
+}
+```
+
+```json Error - Missing Fields (400)
+{
+  "error": "Missing required fields: email, password, name, userType, ageCategory"
+}
+```
+</ResponseExample>
+
+Notes
+
+<Note>
+Email Confirmation: Emails are auto-confirmed since Task Dojo doesn't have a configured email server. Users can sign in immediately after signup.
+</Note>
+
+<Warning>
+Duplicate Emails: Each email can only be used once. If a user tries to sign up with an existing email, they'll receive a 400 error.
+</Warning>
+
+<Info>
+Disciple Accounts: When creating a disciple account, you must provide a valid `senseiId`. The sensei must exist in the database.
+</Info>
+
+Common Use Cases
+
+Create Master Account
+
+```javascript
+await signup({
+  email: 'user@example.com',
+  password: 'secure123',
+  name: 'John Doe',
+  userType: 'master',
+  ageCategory: 'mantis'
+})
+```
+
+Create Sensei Account
+
+```javascript
+await signup({
+  email: 'teacher@example.com',
+  password: 'secure123',
+  name: 'Ms. Johnson',
+  userType: 'sensei',
+  ageCategory: 'mantis'
+})
+```
+
+Create Disciple Account
+
+```javascript
+// First, sensei must be signed in to get their ID
+const senseiId = currentUser.id
+
+await signup({
+  email: 'student@example.com',
+  password: 'secure123',
+  name: 'Student Name',
+  userType: 'disciple',
+  ageCategory: 'cricket',
+  senseiId: senseiId  // Links to sensei
+})
+```
+
+Error Codes
+
+| Code | Description |
+|------|-------------|
+| `201` | Account created successfully |
+| `400` | Invalid request (missing fields, weak password, duplicate email) |
+| `500` | Server error (database or auth service issue) |
+
+Related Endpoints
+
+Sign In - Authenticate existing user
+Get Profile - Retrieve user profile
+Create Disciple - Sensei creates disciple (alternative flow)
+```

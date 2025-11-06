@@ -1,0 +1,806 @@
+```mdx
+---
+title: Monitoring & Logging
+description: Monitor errors, performance, and usage in Task Dojo
+---
+
+Monitoring Overview
+
+Task Dojo uses a multi-layered monitoring approach:
+
+Error Tracking - Catch and fix bugs quickly
+Performance Monitoring - Track Core Web Vitals
+Usage Analytics - Understand user behavior
+Server Logs - Debug backend issues
+Database Monitoring - Track query performance
+
+---
+
+Error Tracking
+
+Recommended: Sentry
+
+Setup Sentry for production error tracking:
+
+<Steps>
+  <Step title="Create Sentry Account">
+Go to sentry.io
+Sign up (free tier available)
+Create new project → React
+Copy DSN (connection string)
+  </Step>
+
+  <Step title="Install Sentry SDK">
+    ```bash
+    npm install @sentry/react
+    ```
+  </Step>
+
+  <Step title="Initialize Sentry">
+    ```typescript
+    // utils/sentry.ts
+    import * as Sentry from '@sentry/react'
+    
+    export function initSentry() {
+      if (import.meta.env.PROD) {
+        Sentry.init({
+          dsn: 'https://...@sentry.io/...',
+          environment: import.meta.env.MODE,
+          tracesSampleRate: 0.1,  // 10% performance monitoring
+          
+          // Ignore common non-errors
+          ignoreErrors: [
+            'ResizeObserver loop limit exceeded',
+            'Non-Error promise rejection captured',
+          ],
+          
+          // Add user context
+          beforeSend(event, hint) {
+            const error = hint.originalException
+            console.error('Sentry captured error:', error)
+            return event
+          }
+        })
+      }
+    }
+    
+    // App.tsx
+    import { initSentry } from './utils/sentry'
+    
+    function App() {
+      useEffect(() => {
+        initSentry()
+      }, [])
+    }
+    ```
+  </Step>
+
+  <Step title="Add Error Boundary">
+    ```typescript
+    import { ErrorBoundary } from '@sentry/react'
+    
+    function App() {
+      return (
+        <ErrorBoundary
+          fallback={({ error, resetError }) => (
+            <div className="error-page">
+              <h1>Something went sideways</h1>
+              <p>{error.message}</p>
+              <Button onClick={resetError}>
+                Try Again
+              </Button>
+            </div>
+          )}
+          onError={(error, errorInfo) => {
+            console.error('Error boundary caught:', error, errorInfo)
+          }}
+        >
+          <YourApp />
+        </ErrorBoundary>
+      )
+    }
+    ```
+  </Step>
+
+  <Step title="Set User Context">
+    ```typescript
+    import * as Sentry from '@sentry/react'
+    
+    // After user logs in
+    Sentry.setUser({
+      id: profile.id,
+      email: profile.email,
+      username: profile.name,
+      userType: profile.userType,
+      beltLevel: profile.beltLevel
+    })
+    
+    // On logout
+    Sentry.setUser(null)
+    ```
+  </Step>
+</Steps>
+
+---
+
+Manual Error Logging
+
+```typescript
+import * as Sentry from '@sentry/react'
+
+// Capture exceptions
+try {
+  await completeTask(taskId, quality)
+} catch (error) {
+  Sentry.captureException(error, {
+    contexts: {
+      task: {
+        id: taskId,
+        quality: quality
+      }
+    },
+    tags: {
+      feature: 'task-completion'
+    }
+  })
+  toast.error('Failed to complete task')
+}
+
+// Capture messages
+Sentry.captureMessage('User reached max belt level', {
+  level: 'info',
+  tags: {
+    userId: profile.id,
+    beltLevel: 'black'
+  }
+})
+```
+
+---
+
+Console Logging
+
+Structured logging pattern:
+
+```typescript
+// utils/logger.ts
+export const logger = {
+  info: (message: string, data?: any) => {
+    if (import.meta.env.DEV) {
+      console.log(`ℹ️ ${message}`, data)
+    }
+  },
+  
+  error: (message: string, error?: any) => {
+    console.error(`❌ ${message}`, error)
+    if (import.meta.env.PROD && window.Sentry) {
+      Sentry.captureException(error, {
+        contexts: { message }
+      })
+    }
+  },
+  
+  warn: (message: string, data?: any) => {
+    console.warn(`⚠️ ${message}`, data)
+  },
+  
+  debug: (message: string, data?: any) => {
+    if (import.meta.env.DEV) {
+      console.debug(`🐛 ${message}`, data)
+    }
+  }
+}
+
+// Usage
+import { logger } from '../utils/logger'
+
+async function createTask(taskData: any) {
+  logger.info('Creating task', { title: taskData.title })
+  
+  try {
+    const task = await createTaskAPI(taskData)
+    logger.info('Task created successfully', { taskId: task.id })
+    return task
+  } catch (error) {
+    logger.error('Failed to create task', error)
+    throw error
+  }
+}
+```
+
+---
+
+Performance Monitoring
+
+Web Vitals Tracking
+
+```typescript
+// utils/web-vitals.ts
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+
+interface Metric {
+  name: string
+  value: number
+  rating: 'good' | 'needs-improvement' | 'poor'
+}
+
+function sendToAnalytics(metric: Metric) {
+  // Send to your analytics service
+  console.log('Web Vital:', metric)
+  
+  // Or send to Sentry
+  if (window.Sentry) {
+    Sentry.captureMessage(`Web Vital: ${metric.name}`, {
+      level: metric.rating === 'good' ? 'info' : 'warning',
+      contexts: {
+        metric: {
+          name: metric.name,
+          value: metric.value,
+          rating: metric.rating
+        }
+      }
+    })
+  }
+  
+  // Or send to custom endpoint
+  fetch('/api/metrics', {
+    method: 'POST',
+    body: JSON.stringify(metric)
+  })
+}
+
+export function initWebVitals() {
+  getCLS(sendToAnalytics)   // Cumulative Layout Shift
+  getFID(sendToAnalytics)   // First Input Delay
+  getFCP(sendToAnalytics)   // First Contentful Paint
+  getLCP(sendToAnalytics)   // Largest Contentful Paint
+  getTTFB(sendToAnalytics)  // Time to First Byte
+}
+
+// App.tsx
+import { initWebVitals } from './utils/web-vitals'
+
+useEffect(() => {
+  if (import.meta.env.PROD) {
+    initWebVitals()
+  }
+}, [])
+```
+
+---
+
+Performance Marks
+
+```typescript
+// Measure custom performance
+export function measurePerformance(name: string, startMark: string, endMark: string) {
+  performance.mark(startMark)
+  
+  // Do work...
+  
+  performance.mark(endMark)
+  performance.measure(name, startMark, endMark)
+  
+  const measure = performance.getEntriesByName(name)[0]
+  console.log(`${name}: ${measure.duration}ms`)
+  
+  // Clean up
+  performance.clearMarks(startMark)
+  performance.clearMarks(endMark)
+  performance.clearMeasures(name)
+}
+
+// Usage
+async function loadDashboard() {
+  performance.mark('dashboard-start')
+  
+  const tasks = await getTasks()
+  const profile = await getProfile()
+  
+  performance.mark('dashboard-end')
+  measurePerformance('Dashboard Load', 'dashboard-start', 'dashboard-end')
+}
+```
+
+---
+
+Usage Analytics
+
+Recommended: Intercom Events
+
+Already integrated! Track user actions:
+
+```typescript
+import { trackIntercomEvent, IntercomEvents } from '../utils/intercom'
+
+// Task completion
+trackIntercomEvent(IntercomEvents.TASK_COMPLETED, {
+  taskId: task.id,
+  category: task.category,
+  pointsEarned: result.pointsEarned,
+  quality: quality
+})
+
+// Belt progression
+trackIntercomEvent(IntercomEvents.BELT_EARNED, {
+  beltRank: newBelt,
+  totalPoints: profile.points,
+  daysActive: profile.streak
+})
+
+// Feature usage
+trackIntercomEvent(IntercomEvents.FOCUS_TIMER_STARTED, {
+  duration: 25,
+  taskId: taskId
+})
+```
+
+---
+
+Alternative: PostHog
+
+Open-source analytics:
+
+```typescript
+// utils/analytics.ts
+import posthog from 'posthog-js'
+
+export function initAnalytics() {
+  if (import.meta.env.PROD) {
+    posthog.init('YOUR_API_KEY', {
+      api_host: 'https://app.posthog.com'
+    })
+  }
+}
+
+export function trackEvent(eventName: string, properties?: any) {
+  if (import.meta.env.PROD && window.posthog) {
+    posthog.capture(eventName, properties)
+  }
+}
+
+export function identifyUser(userId: string, traits?: any) {
+  if (window.posthog) {
+    posthog.identify(userId, traits)
+  }
+}
+
+// Usage
+import { trackEvent, identifyUser } from '../utils/analytics'
+
+// Identify user
+identifyUser(profile.id, {
+  name: profile.name,
+  userType: profile.userType,
+  beltLevel: profile.beltLevel
+})
+
+// Track event
+trackEvent('task_completed', {
+  taskId: task.id,
+  pointsEarned: 15
+})
+```
+
+---
+
+Server Logs
+
+Supabase Edge Function Logs
+
+View real-time logs:
+
+```bash
+Tail logs
+supabase functions logs server --tail
+
+View last 100 logs
+supabase functions logs server --limit 100
+
+Filter by level
+supabase functions logs server --level error
+```
+
+---
+
+Structured Server Logging
+
+```typescript
+// supabase/functions/server/index.tsx
+import { Hono } from 'npm:hono'
+import { logger } from 'npm:hono/logger'
+
+const app = new Hono()
+
+// Enable request logging
+app.use('*', logger(console.log))
+
+// Custom logging middleware
+app.use('*', async (c, next) => {
+  const start = Date.now()
+  await next()
+  const ms = Date.now() - start
+  
+  // Log slow requests
+  if (ms > 1000) {
+    console.warn('Slow request', {
+      method: c.req.method,
+      path: c.req.path,
+      duration: ms,
+      status: c.res.status
+    })
+  }
+})
+
+// Route with logging
+app.post('/tasks', async (c) => {
+  const user = c.get('user')
+  
+  try {
+    console.log('Creating task', {
+      userId: user?.id,
+      timestamp: new Date().toISOString()
+    })
+    
+    const task = await createTask(user.id, await c.req.json())
+    
+    console.log('Task created', {
+      taskId: task.id,
+      userId: user.id
+    })
+    
+    return c.json({ task })
+  } catch (error) {
+    console.error('Task creation failed', {
+      userId: user?.id,
+      error: error.message,
+      stack: error.stack
+    })
+    
+    return c.json({ error: 'Failed to create task' }, 500)
+  }
+})
+```
+
+---
+
+Log Aggregation
+
+Send logs to external service:
+
+```typescript
+// Custom log transport
+async function sendLogToService(level: string, message: string, data?: any) {
+  if (import.meta.env.PROD) {
+    await fetch('https://logs.example.com/ingest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        level,
+        message,
+        data,
+        timestamp: new Date().toISOString(),
+        service: 'task-dojo-server',
+        environment: Deno.env.get('ENVIRONMENT') || 'production'
+      })
+    })
+  }
+}
+
+// Usage
+console.log = (message: string, ...args: any[]) => {
+  const original = console.log
+  original(message, ...args)
+  sendLogToService('info', message, args)
+}
+```
+
+---
+
+Database Monitoring
+
+Query Performance
+
+```typescript
+// Measure query duration
+async function monitoredQuery(key: string) {
+  const start = Date.now()
+  
+  const result = await kv.get(key)
+  
+  const duration = Date.now() - start
+  
+  if (duration > 100) {
+    console.warn('Slow database query', {
+      key,
+      duration,
+      operation: 'get'
+    })
+  }
+  
+  return result
+}
+```
+
+---
+
+Connection Pool Monitoring
+
+Supabase handles this automatically, but you can track:
+
+```typescript
+app.use('*', async (c, next) => {
+  // Track concurrent requests
+  const activeRequests = globalThis.activeRequestCount || 0
+  globalThis.activeRequestCount = activeRequests + 1
+  
+  if (globalThis.activeRequestCount > 50) {
+    console.warn('High concurrent request count', {
+      count: globalThis.activeRequestCount
+    })
+  }
+  
+  await next()
+  
+  globalThis.activeRequestCount -= 1
+})
+```
+
+---
+
+Custom Dashboards
+
+Health Check Endpoint
+
+```typescript
+// Simple health check
+app.get('/health', (c) => {
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime ? process.uptime() : 'N/A'
+  })
+})
+
+// Detailed health check
+app.get('/health/detailed', async (c) => {
+  const checks = {
+    database: false,
+    ai: false,
+    intercom: false
+  }
+  
+  try {
+    // Check database
+    await kv.get('health-check')
+    checks.database = true
+  } catch (error) {
+    console.error('Database health check failed', error)
+  }
+  
+  try {
+    // Check AI (if configured)
+    const hasAI = !!Deno.env.get('OPENAI_API_KEY') || !!Deno.env.get('ANTHROPIC_API_KEY')
+    checks.ai = hasAI
+  } catch (error) {
+    console.error('AI health check failed', error)
+  }
+  
+  try {
+    // Check Intercom
+    const hasIntercom = !!Deno.env.get('INTERCOM_IDENTITY_VERIFICATION_SECRET')
+    checks.intercom = hasIntercom
+  } catch (error) {
+    console.error('Intercom health check failed', error)
+  }
+  
+  const allHealthy = Object.values(checks).every(v => v)
+  
+  return c.json({
+    status: allHealthy ? 'healthy' : 'degraded',
+    checks,
+    timestamp: new Date().toISOString()
+  }, allHealthy ? 200 : 503)
+})
+```
+
+---
+
+Metrics Endpoint
+
+```typescript
+// Track custom metrics
+const metrics = {
+  taskCreations: 0,
+  taskCompletions: 0,
+  userSignups: 0,
+  errors: 0
+}
+
+// Increment metrics
+app.post('/tasks', async (c) => {
+  metrics.taskCreations++
+  // ... create task
+})
+
+// Expose metrics
+app.get('/metrics', (c) => {
+  return c.json(metrics)
+})
+```
+
+---
+
+Alerting
+
+Critical Error Alerts
+
+```typescript
+// Send alert on critical errors
+async function sendAlert(message: string, data?: any) {
+  if (import.meta.env.PROD) {
+    // Send to Slack, Discord, email, etc.
+    await fetch('https://hooks.slack.com/services/YOUR/WEBHOOK/URL', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `🚨 ${message}`,
+        attachments: [{
+          color: 'danger',
+          fields: Object.entries(data || {}).map(([key, value]) => ({
+            title: key,
+            value: String(value),
+            short: true
+          }))
+        }]
+      })
+    })
+  }
+}
+
+// Usage
+try {
+  await criticalOperation()
+} catch (error) {
+  console.error('Critical operation failed', error)
+  await sendAlert('Critical operation failed', {
+    error: error.message,
+    timestamp: new Date().toISOString()
+  })
+  throw error
+}
+```
+
+---
+
+Uptime Monitoring
+
+Use external service:
+
+UptimeRobot - Free, simple uptime monitoring
+Pingdom - Advanced monitoring
+Better Uptime - Status pages
+
+Setup:
+Create account
+Add HTTP monitor: `https://your-app.com/health`
+Set check interval (1-5 minutes)
+Configure alerts (email, SMS, Slack)
+
+---
+
+Monitoring Checklist
+
+<Steps>
+  <Step title="Error Tracking">
+[ ] Sentry configured
+[ ] Error boundaries added
+[ ] User context set
+[ ] Ignore list configured
+  </Step>
+
+  <Step title="Performance">
+[ ] Web Vitals tracking
+[ ] Custom performance marks
+[ ] Lighthouse audits scheduled
+[ ] Slow query alerts
+  </Step>
+
+  <Step title="Analytics">
+[ ] Event tracking configured
+[ ] User identification
+[ ] Key metrics defined
+[ ] Conversion funnels tracked
+  </Step>
+
+  <Step title="Server Logs">
+[ ] Structured logging
+[ ] Log levels configured
+[ ] Log aggregation (optional)
+[ ] Retention policy set
+  </Step>
+
+  <Step title="Alerts">
+[ ] Critical error alerts
+[ ] Uptime monitoring
+[ ] Performance degradation alerts
+[ ] Notification channels configured
+  </Step>
+</Steps>
+
+---
+
+Troubleshooting
+
+High Error Rates
+
+Check:
+Sentry dashboard for error patterns
+Server logs for backend errors
+Network tab for failed requests
+Recent deployments
+
+Actions:
+Rollback if recent deploy
+Hot-fix critical bugs
+Add more error context
+
+---
+
+Performance Degradation
+
+Check:
+Web Vitals metrics
+Lighthouse score trends
+Server response times
+Database query performance
+
+Actions:
+Profile with React DevTools
+Optimize slow queries
+Add caching
+Review recent changes
+
+---
+
+Missing Analytics Data
+
+Check:
+Console for tracking errors
+Network tab for blocked requests
+Ad blockers (disable for testing)
+Event names match exactly
+
+Actions:
+Verify SDK initialized
+Check API keys
+Test in incognito mode
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Performance" icon="gauge" href="/technical/performance">
+    Optimize for speed
+  </Card>
+  
+  <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
+    Production deployment
+  </Card>
+  
+  <Card title="Security" icon="shield" href="/technical/security">
+    Security best practices
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    API documentation
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Monitoring is essential! Track errors with Sentry, measure performance with Web Vitals, understand usage with analytics, and set up alerts for critical issues. Monitor early, fix fast.
+</Check>
+```

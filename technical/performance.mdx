@@ -1,0 +1,723 @@
+```mdx
+---
+title: Performance Optimization
+description: Strategies for optimizing Task Dojo performance
+---
+
+Performance Overview
+
+Task Dojo is optimized for fast load times and smooth interactions:
+
+Current Metrics (Target):
+First Contentful Paint: <1.5s
+Time to Interactive: <3s
+Bundle Size: <500KB (gzipped)
+Lighthouse Score: 90+
+
+---
+
+Frontend Optimization
+
+1. Code Splitting
+
+Lazy load heavy components:
+
+```typescript
+import { lazy, Suspense } from 'react'
+import { Skeleton } from './ui/skeleton'
+
+// Lazy load components not needed immediately
+const FocusTimer = lazy(() => import('./FocusTimer'))
+const SenseiInsights = lazy(() => import('./SenseiInsights'))
+const TaskBreakdown = lazy(() => import('./TaskBreakdown'))
+
+function Dashboard() {
+  return (
+    <>
+      {/* Critical content loads immediately */}
+      <TasksList tasks={tasks} />
+      
+      {/* Heavy features load on demand */}
+      <Suspense fallback={<Skeleton className="h-64" />}>
+        {showTimer && <FocusTimer />}
+      </Suspense>
+      
+      <Suspense fallback={<Skeleton className="h-96" />}>
+        {showInsights && <SenseiInsights />}
+      </Suspense>
+    </>
+  )
+}
+```
+
+Benefits:
+✅ Smaller initial bundle
+✅ Faster first paint
+✅ Load features on demand
+
+---
+
+2. Memoization
+
+Prevent unnecessary re-renders:
+
+```typescript
+import { useMemo, useCallback } from 'react'
+
+function TasksList({ tasks, filter, sortBy }) {
+  // Memoize expensive calculations
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filter === 'completed') return task.completed
+      if (filter === 'pending') return !task.completed
+      return true
+    })
+  }, [tasks, filter])
+  
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+      if (sortBy === 'points') {
+        return b.basePoints - a.basePoints
+      }
+      return 0
+    })
+  }, [filteredTasks, sortBy])
+  
+  // Memoize callbacks
+  const handleComplete = useCallback((taskId: string, quality: number) => {
+    return completeTask(taskId, quality)
+  }, [])
+  
+  return (
+    <div>
+      {sortedTasks.map(task => (
+        <TaskCard 
+          key={task.id}
+          task={task}
+          onComplete={handleComplete}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+---
+
+3. React.memo
+
+Prevent child component re-renders:
+
+```typescript
+import { memo } from 'react'
+
+// Wrap expensive components
+export const TaskCard = memo(({ task, onComplete }: Props) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{task.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={() => onComplete(task.id)}>
+          Complete
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison
+  return prevProps.task.id === nextProps.task.id &&
+         prevProps.task.completed === nextProps.task.completed
+})
+```
+
+---
+
+4. Virtualization (Future)
+
+For very long lists (>100 items):
+
+```typescript
+import { useVirtualizer } from '@tanstack/react-virtual'
+
+function VirtualTasksList({ tasks }: Props) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 100,  // Estimated row height
+    overscan: 5  // Render 5 items above/below viewport
+  })
+  
+  return (
+    <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
+      <div style={{ height: virtualizer.getTotalSize() }}>
+        {virtualizer.getVirtualItems().map(virtualRow => {
+          const task = tasks[virtualRow.index]
+          return (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: virtualRow.size,
+                transform: `translateY(${virtualRow.start}px)`
+              }}
+            >
+              <TaskCard task={task} />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+```
+
+When to use:
+✅ Lists with 100+ items
+✅ Complex card components
+❌ Simple lists (<50 items)
+
+---
+
+Backend Optimization
+
+1. Batch Database Operations
+
+```typescript
+// ❌ Bad: Multiple individual queries
+for (const taskId of taskIds) {
+  await kv.get(`task:${taskId}`)
+}
+
+// ✅ Good: Single batch query
+const tasks = await kv.mget(taskIds.map(id => `task:${id}`))
+```
+
+---
+
+2. Parallel Requests
+
+```typescript
+// ❌ Bad: Sequential requests
+const profile = await kv.get(`user:${userId}`)
+const tasks = await kv.getByPrefix(`user:${userId}:task:`)
+const disciples = await kv.get(`user:${userId}:disciples`)
+
+// ✅ Good: Parallel requests
+const [profile, tasks, disciples] = await Promise.all([
+  kv.get(`user:${userId}`),
+  kv.getByPrefix(`user:${userId}:task:`),
+  kv.get(`user:${userId}:disciples`)
+])
+```
+
+---
+
+3. Database Indexing
+
+Already configured in `/technical/setup/environment.mdx`:
+
+```sql
+-- Prefix search optimization
+CREATE INDEX idx_kv_prefix ON kv_store_4010be06 
+  USING btree (key text_pattern_ops);
+
+-- JSON value search
+CREATE INDEX idx_kv_value ON kv_store_4010be06 
+  USING gin (value);
+
+-- Timestamp filters
+CREATE INDEX idx_kv_created_at ON kv_store_4010be06 (created_at);
+CREATE INDEX idx_kv_updated_at ON kv_store_4010be06 (updated_at);
+```
+
+---
+
+4. Query Optimization
+
+```typescript
+// ✅ Efficient: Use prefix search
+const userTasks = await kv.getByPrefix(`user:${userId}:task:`)
+
+// ⚠️ Less efficient: Get all, then filter
+const allTasks = await kv.getByPrefix('task:')
+const userTasks = allTasks.filter(t => t.userId === userId)
+```
+
+---
+
+Asset Optimization
+
+1. Image Optimization
+
+```tsx
+// Use ImageWithFallback component
+import { ImageWithFallback } from './components/figma/ImageWithFallback'
+
+<ImageWithFallback
+  src="avatar.png"
+  alt="Avatar"
+  className="w-32 h-32"
+  loading="lazy"  // Lazy load off-screen images
+/>
+```
+
+Best practices:
+✅ Use WebP format (50% smaller than PNG)
+✅ Lazy load below-the-fold images
+✅ Serve responsive sizes
+✅ Compress images (80-90% quality)
+
+---
+
+2. SVG Optimization
+
+```tsx
+// Import SVGs as components (tree-shaking works)
+import BeltIcon from './icons/belt.svg?react'
+
+<BeltIcon className="w-6 h-6 text-primary" />
+
+// Or inline for critical icons
+<svg className="w-6 h-6" viewBox="0 0 24 24">
+  <path d="..." />
+</svg>
+```
+
+---
+
+3. Font Loading
+
+Already optimized in `/styles/globals.css`:
+
+```css
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+```
+
+Options:
+`display=swap` - Show fallback font immediately, swap when loaded
+`display=optional` - Use fallback if font not cached (fastest)
+`display=block` - Block text until font loads (avoid flash)
+
+---
+
+Bundle Size Optimization
+
+1. Analyze Bundle
+
+```bash
+Build and analyze
+npm run build
+
+View bundle size
+ls -lh dist/assets/
+
+Install analyzer
+npm install --save-dev rollup-plugin-visualizer
+
+Add to vite.config.ts
+import { visualizer } from 'rollup-plugin-visualizer'
+
+export default {
+  plugins: [
+    visualizer({ open: true })
+  ]
+}
+```
+
+---
+
+2. Tree Shaking
+
+Import only what you need:
+
+```typescript
+// ✅ Good: Named imports (tree-shakes unused)
+import { Button, Card } from './ui'
+
+// ❌ Avoid: Default imports (includes everything)
+import * as UI from './ui'
+```
+
+---
+
+3. Dynamic Imports
+
+```typescript
+// Load Intercom only when needed
+async function loadSupport() {
+  const { bootIntercom } = await import('./utils/intercom')
+  bootIntercom(profile, email, accessToken)
+}
+
+// Load AI only when user clicks
+async function handleAIBreakdown() {
+  const { TaskBreakdown } = await import('./components/TaskBreakdown')
+  // Use component
+}
+```
+
+---
+
+Network Optimization
+
+1. Caching Strategy
+
+```typescript
+// Service worker cache (future enhancement)
+// Cache static assets, API responses
+
+// Browser cache headers (Vite handles automatically)
+// CSS/JS: Cache 1 year (immutable)
+// HTML: No cache (always fresh)
+// Images: Cache 30 days
+```
+
+---
+
+2. API Response Optimization
+
+```typescript
+// ✅ Good: Return only needed fields
+app.get('/tasks', async (c) => {
+  const tasks = await kv.getByPrefix(`user:${userId}:task:`)
+  
+  // Strip unnecessary fields
+  const optimized = tasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    completed: task.completed,
+    basePoints: task.basePoints,
+    category: task.category
+    // Don't send: createdBy, updatedAt, etc. unless needed
+  }))
+  
+  return c.json({ tasks: optimized })
+})
+```
+
+---
+
+3. Compression
+
+Enable Gzip/Brotli (automatic on Vercel/Netlify):
+
+```
+Content-Encoding: br
+```
+
+Savings:
+HTML: 60-70% smaller
+CSS: 80-90% smaller
+JS: 60-70% smaller
+
+---
+
+Runtime Performance
+
+1. Debounce Expensive Operations
+
+```typescript
+import { useMemo } from 'react'
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+    
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  
+  return debouncedValue
+}
+
+// Usage: Search input
+function TasksSearch() {
+  const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
+  
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => 
+      t.title.toLowerCase().includes(debouncedSearch.toLowerCase())
+    )
+  }, [tasks, debouncedSearch])  // Only filters after 300ms pause
+  
+  return (
+    <Input 
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Search tasks..."
+    />
+  )
+}
+```
+
+---
+
+2. Throttle Scroll/Resize Handlers
+
+```typescript
+import { useEffect, useRef } from 'react'
+
+function useThrottle(callback: () => void, delay: number) {
+  const lastRan = useRef(Date.now())
+  
+  return () => {
+    const now = Date.now()
+    if (now - lastRan.current >= delay) {
+      callback()
+      lastRan.current = now
+    }
+  }
+}
+
+// Usage: Scroll handler
+function InfiniteScroll() {
+  const handleScroll = useThrottle(() => {
+    // Check if at bottom
+    // Load more items
+  }, 200)  // Max once per 200ms
+  
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+}
+```
+
+---
+
+Animation Performance
+
+1. Use CSS Transforms
+
+```css
+/* ✅ Good: GPU-accelerated */
+.card {
+  transition: transform 0.2s;
+}
+.card:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* ❌ Avoid: Causes reflow */
+.card:hover {
+  top: -4px;
+  width: 102%;
+}
+```
+
+GPU-accelerated properties:
+✅ `transform` (translate, scale, rotate)
+✅ `opacity`
+❌ `width`, `height`, `top`, `left` (reflow)
+
+---
+
+2. Respect Reduced Motion
+
+```typescript
+import { useAccessibility } from '../utils/accessibility-context'
+
+function CompletionCelebration() {
+  const { settings } = useAccessibility()
+  
+  return (
+    <div className={settings.reducedMotion ? 'reduce-motion' : ''}>
+      {!settings.reducedMotion && <ConfettiEffect />}
+      <h2>Great work!</h2>
+    </div>
+  )
+}
+```
+
+---
+
+Monitoring Performance
+
+1. Web Vitals
+
+```typescript
+// utils/web-vitals.ts
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals'
+
+export function reportWebVitals() {
+  getCLS(console.log)  // Cumulative Layout Shift
+  getFID(console.log)  // First Input Delay
+  getFCP(console.log)  // First Contentful Paint
+  getLCP(console.log)  // Largest Contentful Paint
+  getTTFB(console.log) // Time to First Byte
+}
+
+// Call in main App
+import { useEffect } from 'react'
+import { reportWebVitals } from './utils/web-vitals'
+
+function App() {
+  useEffect(() => {
+    if (import.meta.env.PROD) {
+      reportWebVitals()
+    }
+  }, [])
+}
+```
+
+---
+
+2. React DevTools Profiler
+
+Profile component renders:
+
+Open React DevTools
+Go to "Profiler" tab
+Click record button
+Interact with app
+Stop recording
+Analyze flame graph
+
+Look for:
+Components rendering too often
+Expensive render times
+Unnecessary re-renders
+
+---
+
+3. Lighthouse
+
+```bash
+Run Lighthouse audit
+npx lighthouse https://task-dojo.vercel.app --view
+
+Or use Chrome DevTools → Lighthouse tab
+```
+
+Target scores:
+Performance: 90+
+Accessibility: 100
+Best Practices: 90+
+SEO: 90+
+
+---
+
+Performance Checklist
+
+<Steps>
+  <Step title="Code Splitting">
+[ ] Lazy load heavy components
+[ ] Dynamic imports for features
+[ ] Route-based code splitting
+  </Step>
+
+  <Step title="React Optimization">
+[ ] Memoize expensive calculations
+[ ] Use React.memo for pure components
+[ ] Optimize callback dependencies
+[ ] Debounce/throttle handlers
+  </Step>
+
+  <Step title="Assets">
+[ ] Compress images (WebP)
+[ ] Lazy load images
+[ ] Optimize SVGs
+[ ] Use system fonts or subset fonts
+  </Step>
+
+  <Step title="Backend">
+[ ] Batch database queries
+[ ] Use parallel requests
+[ ] Add database indexes
+[ ] Optimize API responses
+  </Step>
+
+  <Step title="Bundle">
+[ ] Tree-shake unused code
+[ ] Analyze bundle size
+[ ] Remove duplicate dependencies
+[ ] Use production build
+  </Step>
+
+  <Step title="Monitoring">
+[ ] Track Web Vitals
+[ ] Profile with React DevTools
+[ ] Run Lighthouse audits
+[ ] Monitor real user data
+  </Step>
+</Steps>
+
+---
+
+Common Performance Issues
+
+Issue: Slow Initial Load
+
+Solutions:
+Implement code splitting
+Lazy load heavy components
+Reduce bundle size
+Enable compression
+Use CDN for assets
+
+Issue: Janky Animations
+
+Solutions:
+Use CSS transforms (not width/height)
+Reduce animation complexity
+Enable hardware acceleration
+Respect reduced motion preference
+
+Issue: Sluggish Interactions
+
+Solutions:
+Debounce search inputs
+Optimize re-renders with memo
+Virtualize long lists
+Move work to Web Workers
+
+Issue: High API Latency
+
+Solutions:
+Batch requests
+Implement caching
+Use optimistic updates
+Add loading states
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Monitoring" icon="chart-line" href="/technical/monitoring">
+    Track performance metrics
+  </Card>
+  
+  <Card title="Testing" icon="vial" href="/technical/development/testing">
+    Performance testing
+  </Card>
+  
+  <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
+    Production optimization
+  </Card>
+  
+  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
+    System design overview
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Performance matters! Optimize code splitting, memoization, assets, and backend queries. Monitor with Web Vitals and Lighthouse. Target <3s interactive time.
+</Check>
+```

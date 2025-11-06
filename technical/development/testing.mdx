@@ -1,0 +1,705 @@
+```mdx
+---
+title: Testing Strategy
+description: Write and run tests for Task Dojo
+---
+
+Testing Overview
+
+Task Dojo uses Vitest for fast, modern testing with React Testing Library for component tests.
+
+Test Types:
+Unit Tests: Pure logic functions (point calculations, belt logic)
+Component Tests: React component rendering and interaction
+Integration Tests: Multi-component workflows
+E2E Tests: (Future) Full user journeys
+
+---
+
+Running Tests
+
+Basic Commands
+
+```bash
+Run all tests once
+npm test
+
+Run tests in watch mode (re-runs on file changes)
+npm run test:watch
+
+Run with UI (visual test explorer)
+npm run test:ui
+
+Generate coverage report
+npm run test:coverage
+```
+
+Watch Mode
+
+Most common during development:
+
+```bash
+npm run test:watch
+```
+
+Features:
+Auto-runs tests when files change
+Press `a` to run all tests
+Press `f` to run only failed tests
+Press `t` to filter by test name pattern
+Press `q` to quit
+
+---
+
+Test Structure
+
+Directory Organization
+
+```
+tests/
+├── unit/                    # Pure logic tests
+│   └── point-calculations.test.ts
+├── components/              # Component tests
+│   └── CompletionCelebration.test.tsx
+├── integration/             # Workflow tests
+│   └── celebration-workflow.test.tsx
+├── utils/                   # Test utilities
+│   └── test-helpers.tsx
+├── mocks/                   # Mocked dependencies
+│   └── accessibility-context.tsx
+└── setup.ts                 # Global test setup
+```
+
+---
+
+Unit Tests
+
+Pure Logic Testing
+
+Test business logic without UI:
+
+```typescript
+// tests/unit/point-calculations.test.ts
+import { describe, it, expect } from 'vitest'
+import { calculatePoints } from '../../utils/calculations'
+
+describe('Point Calculations', () => {
+  it('should apply quality multipliers correctly', () => {
+    const points = calculatePoints({
+      basePoints: 10,
+      quality: 5,  // Excellent (1.5x)
+      streak: 0
+    })
+    
+    expect(points).toBe(15)  // 10 * 1.5
+  })
+  
+  it('should add streak bonuses', () => {
+    const points = calculatePoints({
+      basePoints: 10,
+      quality: 3,  // Good (1.0x)
+      streak: 14   // 20% bonus
+    })
+    
+    expect(points).toBe(12)  // 10 + (10 * 0.2)
+  })
+})
+```
+
+Belt Calculation Tests
+
+```typescript
+// tests/unit/belt-progression.test.ts
+import { getBeltLevel } from '../../utils/belt-colors'
+
+describe('Belt Progression', () => {
+  it('should return white belt for 0 points', () => {
+    const belt = getBeltLevel(0, 'cricket')
+    expect(belt).toBe('white')
+  })
+  
+  it('should return yellow belt for 150+ points', () => {
+    const belt = getBeltLevel(150, 'cricket')
+    expect(belt).toBe('yellow')
+  })
+  
+  it('should account for age multipliers', () => {
+    // Mantis (1.5x) needs 150 points for yellow
+    // Cricket (1.0x) needs 150 points for yellow
+    // Grasshopper (0.7x) needs 105 points for yellow
+    
+    const mantis = getBeltLevel(150, 'mantis')
+    const cricket = getBeltLevel(150, 'cricket')
+    const grasshopper = getBeltLevel(105, 'grasshopper')
+    
+    expect(mantis).toBe('yellow')
+    expect(cricket).toBe('yellow')
+    expect(grasshopper).toBe('yellow')
+  })
+})
+```
+
+---
+
+Component Tests
+
+Basic Component Test
+
+```typescript
+// tests/components/TaskCard.test.tsx
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
+import { TaskCard } from '../../components/TaskCard'
+
+describe('TaskCard', () => {
+  it('should render task title', () => {
+    render(<TaskCard task={{ title: 'Complete homework' }} />)
+    
+    expect(screen.getByText('Complete homework')).toBeInTheDocument()
+  })
+  
+  it('should call onComplete when clicked', async () => {
+    const onComplete = vi.fn()
+    const user = userEvent.setup()
+    
+    render(
+      <TaskCard 
+        task={{ id: '123', title: 'Test Task' }}
+        onComplete={onComplete}
+      />
+    )
+    
+    const button = screen.getByRole('button', { name: /complete/i })
+    await user.click(button)
+    
+    expect(onComplete).toHaveBeenCalledWith('123')
+  })
+})
+```
+
+Testing with Context
+
+```typescript
+// tests/components/Settings.test.tsx
+import { render } from '@testing-library/react'
+import { AccessibilityProvider } from '../../utils/accessibility-context'
+
+describe('Settings', () => {
+  it('should render with accessibility context', () => {
+    render(
+      <AccessibilityProvider>
+        <Settings />
+      </AccessibilityProvider>
+    )
+    
+    // Test component behavior
+  })
+})
+```
+
+Mocking API Calls
+
+```typescript
+// tests/components/Dashboard.test.tsx
+import { vi } from 'vitest'
+import * as api from '../../utils/api'
+
+describe('Dashboard', () => {
+  it('should load tasks on mount', async () => {
+    // Mock API response
+    vi.spyOn(api, 'getTasks').mockResolvedValue([
+      { id: '1', title: 'Task 1' },
+      { id: '2', title: 'Task 2' }
+    ])
+    
+    render(<Dashboard accessToken="fake-token" />)
+    
+    // Wait for async load
+    await screen.findByText('Task 1')
+    expect(screen.getByText('Task 2')).toBeInTheDocument()
+    
+    expect(api.getTasks).toHaveBeenCalledWith('fake-token')
+  })
+})
+```
+
+---
+
+Integration Tests
+
+Multi-Component Workflows
+
+```typescript
+// tests/integration/task-completion-flow.test.tsx
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
+import { App } from '../../App'
+
+describe('Task Completion Flow', () => {
+  it('should complete full task workflow', async () => {
+    const user = userEvent.setup()
+    
+    // Mock authenticated state
+    render(<App initialAuth={{ userId: '123', token: 'fake' }} />)
+    
+    // 1. Create task
+    const createButton = screen.getByRole('button', { name: /create task/i })
+    await user.click(createButton)
+    
+    const titleInput = screen.getByLabelText(/title/i)
+    await user.type(titleInput, 'New Task')
+    
+    await user.click(screen.getByRole('button', { name: /save/i }))
+    
+    // 2. Complete task
+    const taskCard = await screen.findByText('New Task')
+    expect(taskCard).toBeInTheDocument()
+    
+    const completeButton = screen.getByRole('button', { name: /complete/i })
+    await user.click(completeButton)
+    
+    // 3. Rate quality
+    const qualityRating = screen.getByRole('radio', { name: /good/i })
+    await user.click(qualityRating)
+    
+    await user.click(screen.getByRole('button', { name: /confirm/i }))
+    
+    // 4. Verify celebration
+    expect(await screen.findByText(/great work/i)).toBeInTheDocument()
+    
+    // 5. Verify points updated
+    expect(screen.getByText(/points: 25/i)).toBeInTheDocument()
+  })
+})
+```
+
+---
+
+Test Utilities
+
+Custom Render Wrapper
+
+```typescript
+// tests/utils/test-helpers.tsx
+import { ReactElement } from 'react'
+import { render, RenderOptions } from '@testing-library/react'
+import { AccessibilityProvider } from '../../utils/accessibility-context'
+
+const AllProviders = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <AccessibilityProvider>
+      {children}
+    </AccessibilityProvider>
+  )
+}
+
+export function renderWithProviders(
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>
+) {
+  return render(ui, { wrapper: AllProviders, ...options })
+}
+
+// Usage:
+import { renderWithProviders } from './test-helpers'
+
+renderWithProviders(<MyComponent />)
+```
+
+Point Calculation Helper
+
+```typescript
+// tests/utils/test-helpers.tsx
+export function calculateExpectedPoints(
+  basePoints: number,
+  quality: number,
+  streak: number
+) {
+  const qualityMultipliers = {
+    1: 0.5,
+    2: 0.8,
+    3: 1.0,
+    4: 1.2,
+    5: 1.5
+  }
+  
+  const qualityMod = qualityMultipliers[quality]
+  const qualityAdjusted = Math.round(basePoints * qualityMod)
+  const qualityBonus = qualityAdjusted - basePoints
+  
+  let streakBonus = 0
+  if (streak >= 30) streakBonus = Math.round(basePoints * 0.3)
+  else if (streak >= 14) streakBonus = Math.round(basePoints * 0.2)
+  else if (streak >= 7) streakBonus = Math.round(basePoints * 0.1)
+  
+  const totalPoints = qualityAdjusted + streakBonus
+  
+  return { totalPoints, qualityBonus, streakBonus }
+}
+```
+
+---
+
+Mocking Strategies
+
+Mock Supabase
+
+```typescript
+// tests/mocks/supabase.ts
+import { vi } from 'vitest'
+
+export const mockSupabase = {
+  from: vi.fn(() => ({
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve({ data: {}, error: null }))
+      }))
+    })),
+    insert: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+    update: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+    delete: vi.fn(() => Promise.resolve({ data: {}, error: null }))
+  })),
+  auth: {
+    getUser: vi.fn(() => Promise.resolve({ data: { user: { id: '123' } }, error: null })),
+    signIn: vi.fn(() => Promise.resolve({ data: {}, error: null }))
+  }
+}
+```
+
+Mock Accessibility Context
+
+```typescript
+// tests/mocks/accessibility-context.tsx
+import { createContext } from 'react'
+
+export const mockAccessibilityContext = {
+  reducedMotion: false,
+  dyslexiaFont: false,
+  fontSize: 100,
+  highContrast: false,
+  updateSettings: vi.fn()
+}
+
+export function MockAccessibilityProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <AccessibilityContext.Provider value={mockAccessibilityContext}>
+      {children}
+    </AccessibilityContext.Provider>
+  )
+}
+```
+
+---
+
+Coverage Reports
+
+Generate Coverage
+
+```bash
+npm run test:coverage
+```
+
+Output:
+```
+File                     | % Stmts | % Branch | % Funcs | % Lines
+-------------------------|---------|----------|---------|--------
+All files                |   85.23 |    78.45 |   82.67 |   85.23
+ utils/api.ts            |   92.15 |    85.71 |   90.00 |   92.15
+ utils/belt-colors.ts    |   100.0 |    100.0 |   100.0 |   100.0
+ components/Dashboard.tsx|   78.45 |    70.23 |   75.00 |   78.45
+```
+
+Coverage files generated:
+`coverage/index.html` - Visual HTML report
+`coverage/coverage-final.json` - JSON data
+
+Coverage Thresholds
+
+Configure in `vitest.config.ts`:
+
+```typescript
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      lines: 80,      // Minimum 80% line coverage
+      branches: 75,   // Minimum 75% branch coverage
+      functions: 80,  // Minimum 80% function coverage
+      statements: 80  // Minimum 80% statement coverage
+    }
+  }
+})
+```
+
+---
+
+Best Practices
+
+Test Naming
+
+```typescript
+// ✅ Good: Descriptive test names
+it('should award 15 points for excellent quality on 10-point task', () => {})
+it('should show error message when API call fails', () => {})
+it('should disable submit button while loading', () => {})
+
+// ❌ Avoid: Vague names
+it('should work', () => {})
+it('test1', () => {})
+```
+
+Arrange-Act-Assert Pattern
+
+```typescript
+it('should calculate points correctly', () => {
+  // Arrange: Set up test data
+  const basePoints = 10
+  const quality = 5
+  const streak = 14
+  
+  // Act: Execute the function
+  const result = calculatePoints(basePoints, quality, streak)
+  
+  // Assert: Verify the result
+  expect(result).toBe(17)  // (10 * 1.5) + 2
+})
+```
+
+Test One Thing
+
+```typescript
+// ✅ Good: One assertion per test
+it('should apply quality multiplier', () => {
+  const points = calculatePoints(10, 5, 0)
+  expect(points).toBe(15)
+})
+
+it('should apply streak bonus', () => {
+  const points = calculatePoints(10, 3, 14)
+  expect(points).toBe(12)
+})
+
+// ❌ Avoid: Testing multiple things
+it('should calculate everything', () => {
+  expect(calculatePoints(10, 5, 0)).toBe(15)
+  expect(calculatePoints(10, 3, 14)).toBe(12)
+  expect(calculatePoints(10, 1, 30)).toBe(8)
+  // Too much in one test!
+})
+```
+
+Mock External Dependencies
+
+```typescript
+// ✅ Good: Mock external APIs
+it('should handle API errors', async () => {
+  vi.spyOn(api, 'getTasks').mockRejectedValue(new Error('Network error'))
+  
+  render(<Dashboard />)
+  
+  expect(await screen.findByText(/error/i)).toBeInTheDocument()
+})
+
+// ❌ Avoid: Real API calls in tests
+it('should load tasks', async () => {
+  const tasks = await api.getTasks('real-token')  // Don't do this!
+  expect(tasks.length).toBeGreaterThan(0)
+})
+```
+
+---
+
+Debugging Tests
+
+Log Component Output
+
+```typescript
+import { render, screen, debug } from '@testing-library/react'
+
+it('should render correctly', () => {
+  render(<MyComponent />)
+  
+  // Log entire component tree
+  screen.debug()
+  
+  // Log specific element
+  screen.debug(screen.getByRole('button'))
+})
+```
+
+Test-Specific Queries
+
+```typescript
+// By role (preferred)
+screen.getByRole('button', { name: /submit/i })
+screen.getByRole('textbox', { name: /email/i })
+
+// By label
+screen.getByLabelText(/password/i)
+
+// By text
+screen.getByText(/welcome/i)
+
+// By test ID (last resort)
+screen.getByTestId('task-card-123')
+```
+
+Async Debugging
+
+```typescript
+// Wait for element to appear
+const element = await screen.findByText('Loaded')
+
+// Wait for element to disappear
+await waitFor(() => {
+  expect(screen.queryByText('Loading')).not.toBeInTheDocument()
+})
+
+// Custom timeout
+await screen.findByText('Slow element', {}, { timeout: 5000 })
+```
+
+---
+
+Continuous Integration
+
+GitHub Actions
+
+```yaml
+.github/workflows/test.yml
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+uses: actions/checkout@v3
+      
+name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+name: Install dependencies
+        run: npm ci
+      
+name: Run tests
+        run: npm test
+      
+name: Generate coverage
+        run: npm run test:coverage
+      
+name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/coverage-final.json
+```
+
+---
+
+Common Test Scenarios
+
+Testing Forms
+
+```typescript
+it('should submit form with valid data', async () => {
+  const onSubmit = vi.fn()
+  const user = userEvent.setup()
+  
+  render(<TaskForm onSubmit={onSubmit} />)
+  
+  await user.type(screen.getByLabelText(/title/i), 'New Task')
+  await user.selectOptions(screen.getByLabelText(/category/i), 'morning')
+  await user.click(screen.getByRole('button', { name: /create/i }))
+  
+  expect(onSubmit).toHaveBeenCalledWith({
+    title: 'New Task',
+    category: 'morning'
+  })
+})
+```
+
+Testing Loading States
+
+```typescript
+it('should show loading spinner', () => {
+  render(<Dashboard loading={true} />)
+  
+  expect(screen.getByRole('status')).toBeInTheDocument()
+  expect(screen.getByText(/loading/i)).toBeInTheDocument()
+})
+
+it('should hide spinner when loaded', () => {
+  const { rerender } = render(<Dashboard loading={true} />)
+  
+  rerender(<Dashboard loading={false} />)
+  
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+```
+
+Testing Error States
+
+```typescript
+it('should display error message', () => {
+  render(<Dashboard error="Failed to load tasks" />)
+  
+  expect(screen.getByRole('alert')).toHaveTextContent('Failed to load tasks')
+})
+```
+
+---
+
+Performance Testing
+
+Measure Render Time
+
+```typescript
+import { render } from '@testing-library/react'
+
+it('should render quickly', () => {
+  const start = performance.now()
+  
+  render(<ComplexComponent data={largeDataset} />)
+  
+  const end = performance.now()
+  const renderTime = end - start
+  
+  expect(renderTime).toBeLessThan(100)  // < 100ms
+})
+```
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Component Structure" icon="shapes" href="/technical/development/component-structure">
+    Understand component architecture
+  </Card>
+  
+  <Card title="State Management" icon="database" href="/technical/development/state-management">
+    Learn state patterns
+  </Card>
+  
+  <Card title="Local Development" icon="laptop-code" href="/technical/setup/local-development">
+    Set up development environment
+  </Card>
+  
+  <Card title="API Testing" icon="plug" href="/api-reference/overview">
+    Test API endpoints
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Write tests as you code! Test-driven development catches bugs early and makes refactoring safer. Aim for 80%+ coverage on critical paths.
+</Check>
+```

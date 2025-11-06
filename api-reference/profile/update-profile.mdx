@@ -1,0 +1,280 @@
+```mdx
+---
+title: 'Update Profile'
+api: 'PUT /profile'
+description: 'Update user profile settings'
+---
+
+Endpoint
+
+```
+PUT /make-server-4010be06/profile
+```
+
+Update user profile fields. Only included fields will be updated.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token
+  
+  ```
+  Authorization: Bearer YOUR_ACCESS_TOKEN
+  ```
+</ParamField>
+
+---
+
+Request Body
+
+<Note>
+All fields are optional. Only send fields you want to update.
+</Note>
+
+<ParamField body="name" type="string">
+  Update display name
+</ParamField>
+
+<ParamField body="selectedAvatar" type="string">
+  Change avatar skin
+  
+  Options: `grasshopper`, `cricket`, `stickbug`, `mantis`, `sensei-owl`, `sensei-crane`, `sensei-turtle`, `dojo-spirit`, `shadow-master`, `golden-warrior`
+</ParamField>
+
+<ParamField body="points" type="number">
+  Admin use only - Manually adjust points
+</ParamField>
+
+<ParamField body="beltLevel" type="string">
+  Admin use only - Manually set belt level
+</ParamField>
+
+<ParamField body="streak" type="number">
+  Admin use only - Manually adjust streak
+</ParamField>
+
+---
+
+Response
+
+<ResponseField name="profile" type="object">
+  Updated profile object with all fields
+</ResponseField>
+
+---
+
+Example Requests
+
+Change Avatar
+
+```typescript
+const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/profile', {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    selectedAvatar: 'dojo-spirit'
+  })
+})
+
+const { profile } = await response.json()
+```
+
+Update Name
+
+```typescript
+await fetch('/profile', {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'New Display Name'
+  })
+})
+```
+
+Multiple Updates
+
+```typescript
+await fetch('/profile', {
+  method: 'PUT',
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Updated Name',
+    selectedAvatar: 'shadow-master'
+  })
+})
+```
+
+---
+
+Example Response
+
+```json
+{
+  "profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "alex@example.com",
+    "name": "Updated Name",
+    "userType": "master",
+    "ageCategory": "mantis",
+    "points": 245,
+    "beltLevel": "yellow",
+    "streak": 14,
+    "selectedAvatar": "shadow-master",
+    "totalTasksCompleted": 42,
+    "earlyCompletions": 15,
+    "focusSessionsCompleted": 8,
+    "senseiId": null,
+    "disciples": [],
+    "graceTokensAvailable": 2,
+    "lastGraceTokenReset": "2024-01-10T00:00:00Z",
+    "streakSaviorOffered": false,
+    "lastActiveDate": "2024-01-15T10:30:00Z",
+    "createdAt": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 401 - Unauthorized
+{
+  "error": "Unauthorized"
+}
+```
+
+```json 404 - Profile Not Found
+{
+  "error": "Profile not found"
+}
+```
+
+```json 500 - Server Error
+{
+  "error": "Failed to update profile"
+}
+```
+</ResponseExample>
+
+---
+
+Common Use Cases
+
+Avatar Customization
+
+```typescript
+// User selects new avatar
+async function changeAvatar(avatarId: string) {
+  const response = await fetch('/profile', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ selectedAvatar: avatarId })
+  })
+  
+  const { profile } = await response.json()
+  setProfile(profile)
+  toast.success('Avatar updated!')
+}
+```
+
+Update Accessibility Settings
+
+```typescript
+// Store accessibility preferences in profile (future enhancement)
+async function saveAccessibilitySettings(settings: AccessibilitySettings) {
+  await fetch('/profile', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      accessibilitySettings: settings
+    })
+  })
+}
+```
+
+---
+
+Restricted Fields
+
+<Warning>
+Do not manually update these fields via this endpoint:
+`points` - Updated automatically on task completion
+`beltLevel` - Calculated based on points
+`streak` - Managed by streak system
+`totalTasksCompleted` - Auto-incremented
+`graceTokensAvailable` - Managed by Streak Savior system
+`disciples` - Use `/create-disciple` endpoint
+
+Manually updating these fields may cause data inconsistencies.
+</Warning>
+
+---
+
+Validation
+
+<AccordionGroup>
+  <Accordion title="Avatar Validation">
+    Avatar must be a valid avatar ID. Invalid avatars will be ignored.
+    
+    Some avatars require unlocking through achievements:
+`shadow-master` - Complete 100 tasks
+`golden-warrior` - Complete 25 early tasks
+`dojo-spirit` - Complete 10 focus sessions
+  </Accordion>
+
+  <Accordion title="Name Validation">
+Minimum length: 1 character
+Maximum length: 50 characters
+No validation on special characters (allows emojis)
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Notes
+
+<Info>
+Only fields included in the request body will be updated. All other fields remain unchanged.
+</Info>
+
+<Tip>
+Update profile after Intercom initialization to keep custom attributes in sync.
+</Tip>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
+    Retrieve current profile
+  </Card>
+  
+  <Card title="Avatar Customization" icon="palette" href="/user-guide/features/avatar-customization">
+    Learn about avatars
+  </Card>
+  
+  <Card title="Achievements" icon="trophy" href="/user-guide/progression/achievements">
+    Unlock special avatars
+  </Card>
+</CardGroup>
+```

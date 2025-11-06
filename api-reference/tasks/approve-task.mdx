@@ -1,0 +1,323 @@
+```mdx
+---
+title: 'Approve Task (Sensei)'
+api: 'POST /approve-task'
+description: 'Sensei approves or rejects disciple task completion'
+---
+
+Endpoint
+
+```
+POST /make-server-4010be06/approve-task
+```
+
+Sensei-only endpoint. Approve or reject a disciple's completed task. On approval, disciple receives points with all modifiers applied.
+
+---
+
+Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sensei's bearer token
+</ParamField>
+
+---
+
+Request Body
+
+<ParamField body="taskId" type="string" required>
+  Task identifier to approve/reject
+</ParamField>
+
+<ParamField body="approved" type="boolean" required>
+  `true` to approve, `false` to reject
+</ParamField>
+
+<ParamField body="quality" type="number">
+  Required if approving. Quality rating (1-5 stars)
+  
+  Sensei can override disciple's self-assessment
+</ParamField>
+
+<ParamField body="senseiNote" type="string">
+  Optional feedback note (max 500 characters)
+  
+  Example: `"Great work! Very thorough and completed early."`
+</ParamField>
+
+---
+
+Response
+
+On Approval
+
+<ResponseField name="task" type="object">
+  Updated task with `approved: true`
+</ResponseField>
+
+<ResponseField name="pointsEarned" type="number">
+  Total points awarded to disciple
+</ResponseField>
+
+<ResponseField name="basePoints" type="number">
+  Base points before modifiers
+</ResponseField>
+
+<ResponseField name="qualityBonus" type="number">
+  Points from quality modifier
+</ResponseField>
+
+<ResponseField name="streakBonus" type="number">
+  Points from streak bonus
+</ResponseField>
+
+<ResponseField name="timelinessBonus" type="number">
+  Points from timeliness modifier
+</ResponseField>
+
+<ResponseField name="disciplePoints" type="number">
+  Disciple's total points after approval
+</ResponseField>
+
+<ResponseField name="discipleBelt" type="string">
+  Disciple's belt level after approval
+</ResponseField>
+
+<ResponseField name="beltLevelUp" type="boolean">
+  `true` if disciple advanced to next belt
+</ResponseField>
+
+On Rejection
+
+<ResponseField name="task" type="object">
+  Task remains `completed: true` but `approved: false`
+</ResponseField>
+
+<ResponseField name="rejected" type="boolean">
+  `true`
+</ResponseField>
+
+---
+
+Example Requests
+
+Approve Task
+
+```typescript
+const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/approve-task', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${senseiAccessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    taskId: 'task:disciple123:1234567890:abc123',
+    approved: true,
+    quality: 5,
+    senseiNote: 'Excellent work! Very thorough and completed early.'
+  })
+})
+
+const data = await response.json()
+
+if (data.beltLevelUp) {
+  // Notify disciple of belt progression
+  sendNotification(disciple.id, `Congratulations! You've earned your ${data.discipleBelt} belt!`)
+}
+```
+
+Reject Task
+
+```typescript
+const response = await fetch('/approve-task', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${senseiAccessToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    taskId: 'task:disciple123:1234567890:def456',
+    approved: false,
+    senseiNote: 'Please redo this task. Make sure to follow all steps.'
+  })
+})
+
+const data = await response.json()
+
+if (data.rejected) {
+  toast.info('Task rejected. Disciple will be notified.')
+}
+```
+
+---
+
+Example Responses
+
+Approval Response
+
+```json
+{
+  "task": {
+    "id": "task:disciple123:1234567890:abc123",
+    "userId": "disciple123",
+    "title": "Complete homework",
+    "points": 10,
+    "completed": true,
+    "completedAt": "2024-01-15T16:45:00Z",
+    "quality": 5,
+    "timeliness": "early",
+    "approved": true,
+    "approvedBy": "sensei456",
+    "approvedAt": "2024-01-15T17:00:00Z",
+    "senseiNote": "Excellent work! Very thorough and completed early."
+  },
+  "pointsEarned": 14,
+  "basePoints": 10,
+  "qualityBonus": 2,
+  "streakBonus": 1,
+  "timelinessBonus": 1,
+  "disciplePoints": 264,
+  "discipleBelt": "orange",
+  "beltLevelUp": true
+}
+```
+
+Rejection Response
+
+```json
+{
+  "task": {
+    "id": "task:disciple123:1234567890:def456",
+    "userId": "disciple123",
+    "title": "Clean bedroom",
+    "points": 5,
+    "completed": true,
+    "completedAt": "2024-01-15T14:30:00Z",
+    "quality": 3,
+    "approved": false,
+    "senseiNote": "Please redo this task. Make sure to follow all steps."
+  },
+  "rejected": true
+}
+```
+
+---
+
+Error Responses
+
+<ResponseExample>
+```json 403 - Not a Sensei
+{
+  "error": "Only senseis can approve tasks"
+}
+```
+
+```json 403 - Not Your Disciple
+{
+  "error": "Can only approve your own disciples' tasks"
+}
+```
+
+```json 404 - Task Not Found
+{
+  "error": "Task not found"
+}
+```
+
+```json 400 - Task Not Completed
+{
+  "error": "Task must be completed before approval"
+}
+```
+
+```json 400 - Missing Quality
+{
+  "error": "Quality rating required for approval"
+}
+```
+</ResponseExample>
+
+---
+
+Approval Workflow
+
+```typescript
+// Sensei views pending approvals
+async function loadPendingApprovals(discipleId: string) {
+  const response = await fetch(`/tasks?userId=${discipleId}&filter=pending-approval`)
+  const { tasks } = await response.json()
+  
+  // Show tasks awaiting approval
+  const pending = tasks.filter(t => t.completed && !t.approved)
+  setPendingTasks(pending)
+}
+
+// Sensei approves task
+async function handleApprove(task: Task, quality: number, note: string) {
+  const result = await approveTask(task.id, true, quality, note)
+  
+  // Update local state
+  setPendingTasks(prev => prev.filter(t => t.id !== task.id))
+  
+  // Show success message
+  if (result.beltLevelUp) {
+    toast.success(`${task.userId} earned their ${result.discipleBelt} belt!`)
+  } else {
+    toast.success(`Approved! ${result.pointsEarned} points awarded.`)
+  }
+  
+  // Track event
+  trackIntercomEvent('task-approved', {
+    taskId: task.id,
+    pointsAwarded: result.pointsEarned,
+    beltLevelUp: result.beltLevelUp
+  })
+}
+
+// Sensei rejects task
+async function handleReject(task: Task, note: string) {
+  await approveTask(task.id, false, 0, note)
+  
+  // Update local state
+  setPendingTasks(prev => prev.map(t => 
+    t.id === task.id ? { ...t, approved: false, senseiNote: note } : t
+  ))
+  
+  toast.info('Task rejected. Disciple will be notified.')
+}
+```
+
+---
+
+Notes
+
+<Info>
+Sensei can override quality rating. If disciple rated themselves a 5 but sensei disagrees, sensei can change it to 3 during approval.
+</Info>
+
+<Warning>
+Only approve your own disciples' tasks. Attempting to approve another sensei's disciple will return a 403 error.
+</Warning>
+
+<Tip>
+Provide constructive feedback in sensei notes. Disciples learn best with specific, actionable guidance.
+</Tip>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Get Disciples" icon="users" href="/api-reference/disciples/get-disciples">
+    View your disciples
+  </Card>
+  
+  <Card title="Sensei Insights" icon="chart-line" href="/user-guide/sensei/insights">
+    Track disciple progress
+  </Card>
+  
+  <Card title="Sensei Notes Library" icon="book" href="/user-guide/sensei/notes-library">
+    Pre-written feedback templates
+  </Card>
+</CardGroup>
+```

@@ -1,0 +1,708 @@
+```mdx
+---
+title: Intercom Integration
+description: Complete guide to Intercom setup and usage in Task Dojo
+---
+
+Overview
+
+Task Dojo integrates Intercom for customer support, user engagement, and contextual help. The integration includes:
+
+✅ User identification with custom attributes
+✅ Identity verification for security
+✅ Event tracking for user behavior
+✅ Contextual help articles
+✅ Automated messages
+✅ Real-time chat support
+
+---
+
+Setup
+
+1. Create Intercom Account
+
+<Steps>
+  <Step title="Sign up for Intercom">
+    Visit intercom.com and create an account or workspace.
+  </Step>
+
+  <Step title="Get App ID">
+    From Intercom Dashboard → Settings → Installation:
+Find your App ID (e.g., `qp8vpjla`)
+Save this for environment variables
+  </Step>
+
+  <Step title="Enable Identity Verification">
+    For security, enable Identity Verification:
+    
+Go to Settings → Security → Identity Verification
+Click "Enable identity verification"
+Copy the Secret Key
+Save for backend configuration
+  </Step>
+</Steps>
+
+---
+
+2. Configure Environment Variables
+
+Frontend
+
+Add to `.env`:
+
+```bash
+VITE_INTERCOM_APP_ID=qp8vpjla
+```
+
+Backend
+
+Set Supabase secret:
+
+```bash
+supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=your_secret_key
+```
+
+<Warning>
+Never expose the identity verification secret in frontend code! It must remain server-side only.
+</Warning>
+
+---
+
+3. Install Intercom SDK
+
+Already included in Task Dojo:
+
+```json
+{
+  "dependencies": {
+    "@intercom/messenger-js-sdk": "latest"
+  }
+}
+```
+
+---
+
+Frontend Integration
+
+Loading Intercom
+
+The Intercom utility is located in `/utils/intercom.tsx`:
+
+```typescript
+import { bootIntercom, loadIntercom } from '../utils/intercom'
+
+// In your main App component
+function App() {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
+  
+  useEffect(() => {
+    if (profile && accessToken) {
+      loadIntercom()
+      bootIntercom(profile, email, accessToken)
+    }
+  }, [profile, accessToken])
+  
+  return <YourApp />
+}
+```
+
+---
+
+Using the Hook
+
+Easiest method - use the `useIntercom` hook:
+
+```typescript
+import { useIntercom } from '../utils/intercom'
+
+function Dashboard() {
+  const { profile, email, accessToken } = useAuth()
+  
+  // Automatically boots and updates Intercom
+  useIntercom(profile, email, accessToken)
+  
+  return <div>Dashboard content</div>
+}
+```
+
+What it does:
+✅ Loads Intercom SDK
+✅ Boots with user data
+✅ Updates on profile changes
+✅ Shuts down on logout
+✅ Fetches identity verification hash
+
+---
+
+User Identification
+
+Custom Attributes
+
+Task Dojo sends rich user context to Intercom:
+
+```typescript
+{
+  app_id: 'qp8vpjla',
+  user_id: profile.id,
+  name: profile.name,
+  email: email,
+  created_at: Math.floor(new Date(profile.createdAt).getTime() / 1000),
+  
+  // Custom Task Dojo attributes
+  user_type: 'master',           // master | sensei | disciple
+  user_type_label: 'Master (Independent)',
+  age_category: 'mantis',        // grasshopper | cricket | stickbug | mantis
+  age_category_label: '18+ years',
+  belt_rank: 'yellow',           // white | yellow | orange | ... | black
+  total_points: 250,
+  current_streak: 14,
+  accessibility_mode: 'standard'
+}
+```
+
+Benefits:
+Support agents see user's progress at a glance
+Can filter users by belt level, type, age
+Better context for personalized help
+
+---
+
+Identity Verification
+
+How It Works
+
+```
+User logs in → Frontend has access token
+Frontend calls backend: POST /intercom/user-hash
+Backend generates HMAC hash: 
+   hash = HMAC-SHA256(userId, secret)
+Backend returns hash to frontend
+Frontend boots Intercom with hash
+Intercom verifies hash matches
+```
+
+Backend Implementation
+
+Already implemented in `/supabase/functions/server/index.tsx`:
+
+```typescript
+app.post('/intercom/user-hash', async (c) => {
+  const user = c.get('user')
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
+  
+  const secret = Deno.env.get('INTERCOM_IDENTITY_VERIFICATION_SECRET')
+  if (!secret) {
+    console.warn('Intercom secret not configured')
+    return c.json({ error: 'Not configured' }, 500)
+  }
+  
+  // Generate HMAC-SHA256 hash
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(user.id)
+  )
+  
+  const hashArray = Array.from(new Uint8Array(signature))
+  const userHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  return c.json({ userHash })
+})
+```
+
+Frontend Usage
+
+Automatically handled by `bootIntercom()`:
+
+```typescript
+// Fetches hash from backend
+const userHash = await fetchUserHash(accessToken)
+
+// Boots Intercom with hash
+Intercom({
+  app_id: INTERCOM_APP_ID,
+  user_id: profile.id,
+  user_hash: userHash,  // ← Security!
+  // ... other attributes
+})
+```
+
+<Info>
+Identity verification prevents attackers from impersonating users. Always enable it in production!
+</Info>
+
+---
+
+Event Tracking
+
+Track User Actions
+
+```typescript
+import { trackIntercomEvent, IntercomEvents } from '../utils/intercom'
+
+// Task completion
+trackIntercomEvent(IntercomEvents.TASK_COMPLETED, {
+  task_id: taskId,
+  task_title: task.title,
+  category: task.category,
+  points_earned: 15,
+  quality: 5
+})
+
+// Belt earned
+trackIntercomEvent(IntercomEvents.BELT_EARNED, {
+  belt_rank: 'yellow',
+  total_points: 150,
+  user_type: profile.userType
+})
+
+// Feature usage
+trackIntercomEvent(IntercomEvents.FOCUS_TIMER_STARTED, {
+  duration_minutes: 25,
+  task_id: taskId
+})
+```
+
+Available Events
+
+Located in `/utils/intercom.tsx`:
+
+```typescript
+export const IntercomEvents = {
+  // Onboarding
+  ONBOARDING_STARTED: 'onboarding-started',
+  ONBOARDING_COMPLETED: 'onboarding-completed',
+  
+  // Tasks
+  TASK_CREATED: 'task-created',
+  TASK_COMPLETED: 'task-completed',
+  TASK_SUBMITTED_FOR_APPROVAL: 'task-submitted-for-approval',
+  TASK_APPROVED: 'task-approved',
+  TASK_REJECTED: 'task-rejected',
+  
+  // Achievements
+  BELT_EARNED: 'belt-earned',
+  ACHIEVEMENT_UNLOCKED: 'achievement-unlocked',
+  STREAK_MILESTONE: 'streak-milestone',
+  
+  // Features
+  FOCUS_TIMER_STARTED: 'focus-timer-started',
+  FOCUS_TIMER_COMPLETED: 'focus-timer-completed',
+  TASK_BREAKDOWN_USED: 'task-breakdown-used',
+  STREAK_SAVIOR_USED: 'streak-savior-used',
+  
+  // Sensei
+  DISCIPLE_LINKED: 'disciple-linked',
+  SENSEI_NOTE_ADDED: 'sensei-note-added',
+  
+  // Settings
+  ACCESSIBILITY_ENABLED: 'accessibility-enabled',
+  NOTIFICATION_CHANGED: 'notification-changed',
+}
+```
+
+---
+
+Messenger Controls
+
+Show/Hide Messenger
+
+```typescript
+import { showIntercom, hideIntercom } from '../utils/intercom'
+
+// Show messenger
+<Button onClick={showIntercom}>
+  Get Help
+</Button>
+
+// Hide messenger
+hideIntercom()
+```
+
+Pre-filled Messages
+
+```typescript
+import { startIntercomConversation } from '../utils/intercom'
+
+// Start conversation with message
+<Button onClick={() => 
+  startIntercomConversation("I'm having trouble completing a task")
+}>
+  Need Help with Tasks
+</Button>
+```
+
+Show Help Articles
+
+```typescript
+import { showIntercomArticle } from '../utils/intercom'
+
+// Show specific article
+<Button onClick={() => showIntercomArticle('123456')}>
+  Learn about Belt System
+</Button>
+```
+
+---
+
+Custom Messenger Button
+
+Task Dojo includes a custom help button in `/components/IntercomButton.tsx`:
+
+```tsx
+import { MessageCircle } from 'lucide-react'
+import { Button } from './ui/button'
+import { showIntercom } from '../utils/intercom'
+
+export function IntercomButton() {
+  return (
+    <Button
+      onClick={showIntercom}
+      variant="outline"
+      size="icon"
+      className="fixed bottom-4 right-4 rounded-full shadow-lg"
+      aria-label="Get help"
+    >
+      <MessageCircle className="h-5 w-5" />
+    </Button>
+  )
+}
+
+// Usage in App
+<IntercomButton />
+```
+
+---
+
+Updating User Data
+
+On Profile Changes
+
+```typescript
+import { updateIntercom } from '../utils/intercom'
+
+// After points change
+async function completeTask(taskId: string) {
+  const result = await completeTaskAPI(taskId)
+  
+  // Update local profile
+  setProfile(prev => ({
+    ...prev,
+    points: result.currentPoints,
+    beltLevel: result.beltLevel
+  }))
+  
+  // Update Intercom
+  updateIntercom({
+    ...profile,
+    points: result.currentPoints,
+    beltLevel: result.beltLevel
+  })
+}
+```
+
+Automatic Updates
+
+The `useIntercom` hook automatically updates Intercom when key profile fields change:
+
+```typescript
+useEffect(() => {
+  if (profile && intercomInitialized) {
+    updateIntercom(profile)
+  }
+}, [profile?.beltLevel, profile?.points, profile?.streak])
+```
+
+---
+
+Logout Cleanup
+
+Always shut down Intercom on logout:
+
+```typescript
+import { shutdownIntercom } from '../utils/intercom'
+
+async function handleLogout() {
+  // Clear local state
+  setProfile(null)
+  setAccessToken(null)
+  
+  // Shutdown Intercom
+  shutdownIntercom()
+  
+  // Sign out from Supabase
+  await supabase.auth.signOut()
+}
+```
+
+<Warning>
+If you don't call `shutdownIntercom()`, the messenger will persist across sessions with the previous user's data!
+</Warning>
+
+---
+
+Intercom Dashboard Configuration
+
+Messenger Settings
+
+Customize appearance: Settings → Messenger → Customize
+Match Task Dojo purple theme
+Upload logo
+Set greeting message
+
+Create help articles: 
+Write guides for common questions
+Link to your Mintlify docs
+Tag by user type (master/sensei/disciple)
+
+Set up automated messages:
+Welcome message after sign up
+Tips after first task completion
+Encouragement if user is inactive
+Belt progression congratulations
+
+Custom Attributes
+
+Add custom attributes in Intercom Dashboard → Settings → People → Data:
+
+```
+user_type (text)
+user_type_label (text)
+age_category (text)
+age_category_label (text)
+belt_rank (text)
+total_points (number)
+current_streak (number)
+accessibility_mode (text)
+```
+
+Segments
+
+Create user segments:
+
+Senseis - `user_type = sensei`
+Active Masters - `user_type = master AND current_streak > 7`
+Beginners - `belt_rank = white`
+High Achievers - `total_points > 1000`
+Kids - `age_category IN [grasshopper, cricket]`
+
+---
+
+Event-Based Automation
+
+Trigger Messages
+
+Example: Congratulate on belt progression
+
+In Intercom → Messages → Outbound
+Create new message
+Trigger: When event `belt-earned` happens
+Filter: `belt_rank = yellow` (or other belt)
+Message: "🥋 Congratulations on earning your Yellow Belt!"
+
+Workflows
+
+Example: Re-engage inactive users
+
+Segment: `current_streak = 0 AND last_seen > 7 days ago`
+Message: "We miss you! Start a rescue quest to save your progress"
+Action button: "Resume Quest"
+
+---
+
+Testing Intercom
+
+Development Mode
+
+Test without affecting production data:
+
+```typescript
+// Use test mode
+if (import.meta.env.DEV) {
+  // Boot with test data
+  bootIntercom({
+    id: 'test-user-123',
+    name: 'Test User',
+    email: 'test@example.com',
+    userType: 'master',
+    // ...
+  })
+}
+```
+
+Verify Integration
+
+<Steps>
+  <Step title="Check Console">
+    Look for Intercom logs in browser console:
+    ```
+    Intercom booted successfully
+    User hash: abc123...
+    ```
+  </Step>
+
+  <Step title="Test Messenger">
+    Click help button → Messenger should open
+  </Step>
+
+  <Step title="Verify User Data">
+    In Intercom Dashboard → People → Find test user
+    
+    Check custom attributes are populated correctly
+  </Step>
+
+  <Step title="Track Test Event">
+    ```typescript
+    trackIntercomEvent('test-event', { test: true })
+    ```
+    
+    Verify event appears in Intercom dashboard
+  </Step>
+</Steps>
+
+---
+
+Troubleshooting
+
+Messenger Not Showing
+
+Solutions:
+Verify `VITE_INTERCOM_APP_ID` is set correctly
+Check browser console for errors
+Ensure `loadIntercom()` is called
+Try clearing browser cache
+
+Identity Verification Failing
+
+Solutions:
+Verify secret is set: `supabase secrets list`
+Check backend endpoint: `POST /intercom/user-hash`
+Ensure access token is valid
+Re-deploy Edge Functions after setting secret
+
+Events Not Tracking
+
+Solutions:
+Ensure Intercom is booted before tracking
+Check event name matches exactly (case-sensitive)
+Verify user is identified
+Check Intercom dashboard for event data (may take a few minutes)
+
+User Data Not Updating
+
+Solutions:
+Call `updateIntercom()` after profile changes
+Check profile object has correct fields
+Verify Intercom is initialized
+Clear Intercom cache in browser
+
+---
+
+Performance Considerations
+
+Lazy Loading
+
+Intercom adds ~100KB to page load. Consider lazy loading:
+
+```typescript
+// Load Intercom only after critical content
+useEffect(() => {
+  setTimeout(() => {
+    loadIntercom()
+    bootIntercom(profile, email, accessToken)
+  }, 2000)  // 2 second delay
+}, [])
+```
+
+Conditional Loading
+
+Skip Intercom for certain users:
+
+```typescript
+// Only load for paying customers
+if (profile.isPremium) {
+  loadIntercom()
+  bootIntercom(profile, email, accessToken)
+}
+```
+
+---
+
+Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Never Expose Secret" icon="lock">
+    ❌ NEVER put identity verification secret in frontend code
+    
+    ✅ ALWAYS keep it server-side only
+    
+    ✅ Set as Supabase secret: `INTERCOM_IDENTITY_VERIFICATION_SECRET`
+  </Accordion>
+
+  <Accordion title="Validate Access Tokens" icon="shield-check">
+    ```typescript
+    // Always verify user before generating hash
+    const user = c.get('user')
+    if (!user) return c.json({ error: 'Unauthorized' }, 401)
+    ```
+  </Accordion>
+
+  <Accordion title="Sanitize User Data" icon="filter">
+    ```typescript
+    // Don't send sensitive data to Intercom
+    const safeProfile = {
+      id: profile.id,
+      name: profile.name,
+      email: email,
+      // ❌ Don't send: password, API keys, etc.
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Use HTTPS Only" icon="globe">
+    Intercom requires HTTPS in production
+    
+    Development: http://localhost OK
+    
+    Production: https:// required
+  </Accordion>
+</AccordionGroup>
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Services" icon="brain" href="/technical/integrations/ai-services">
+    Integrate OpenAI/Anthropic
+  </Card>
+  
+  <Card title="Monitoring" icon="chart-line" href="/technical/monitoring">
+    Track errors and usage
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Complete API documentation
+  </Card>
+  
+  <Card title="User Guide" icon="book" href="/user-guide/overview">
+    Help content for users
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Intercom is powerful! Use it for contextual help, user engagement, and support. Always enable identity verification in production for security.
+</Check>
+```

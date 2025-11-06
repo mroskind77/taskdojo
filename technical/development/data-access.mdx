@@ -1,0 +1,685 @@
+```mdx
+---
+title: Data Access Patterns
+description: Database operations and API patterns in Task Dojo
+---
+
+Data Architecture
+
+Task Dojo uses a key-value store pattern for maximum flexibility:
+
+```
+Frontend → API Client → Server (Hono) → KV Store → PostgreSQL
+```
+
+Key Components:
+Frontend: `utils/api.ts` - API client functions
+Backend: `supabase/functions/server/index.tsx` - Hono routes
+Database: `kv_store.tsx` - Key-value utilities
+Storage: PostgreSQL JSONB for flexible data
+
+---
+
+Key-Value Store
+
+Overview
+
+All data is stored in a single table with JSONB values:
+
+```sql
+CREATE TABLE kv_store_4010be06 (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+Benefits:
+✅ Schema-less flexibility
+✅ Fast development
+✅ Easy prototyping
+✅ JSONB indexing support
+
+Trade-offs:
+⚠️ No relational constraints
+⚠️ Manual data consistency
+⚠️ Requires careful key design
+
+---
+
+Key Naming Patterns
+
+User data:
+```
+user:{userId}                    // User profile
+user:{userId}:tasks              // All tasks for user
+user:{userId}:task:{taskId}      // Specific task
+user:{userId}:disciples          // Disciple IDs (sensei only)
+```
+
+Task data:
+```
+task:{taskId}                    // Task details
+```
+
+Disciple data:
+```
+disciple:{discipleId}:sensei     // Sensei ID
+disciple:{discipleId}:tasks      // Disciple's tasks
+```
+
+Global data:
+```
+presets:tasks                    // Preset task templates
+```
+
+---
+
+KV Store Functions
+
+Located in `/supabase/functions/server/kv_store.tsx`:
+
+get(key)
+
+Get single value:
+
+```typescript
+import * as kv from './kv_store.tsx'
+
+const profile = await kv.get(`user:${userId}`)
+// Returns: { id, name, points, beltLevel, ... } or undefined
+```
+
+set(key, value)
+
+Set single value:
+
+```typescript
+await kv.set(`user:${userId}`, {
+  id: userId,
+  name: 'John Doe',
+  points: 150,
+  beltLevel: 'yellow',
+  updatedAt: new Date().toISOString()
+})
+```
+
+del(key)
+
+Delete single value:
+
+```typescript
+await kv.del(`task:${taskId}`)
+```
+
+mget(keys[])
+
+Get multiple values:
+
+```typescript
+const taskIds = ['task1', 'task2', 'task3']
+const tasks = await kv.mget(taskIds.map(id => `task:${id}`))
+// Returns: [task1Data, task2Data, task3Data]
+```
+
+mset(keys[], values[])
+
+Set multiple values:
+
+```typescript
+await kv.mset(
+  ['user:1:task:a', 'user:1:task:b'],
+  [taskA, taskB]
+)
+```
+
+mdel(keys[])
+
+Delete multiple values:
+
+```typescript
+await kv.mdel(['task:1', 'task:2', 'task:3'])
+```
+
+getByPrefix(prefix)
+
+Get all keys with prefix:
+
+```typescript
+// Get all tasks for user
+const tasks = await kv.getByPrefix(`user:${userId}:task:`)
+// Returns: [task1, task2, task3, ...]
+```
+
+<Warning>
+No `list()` function - Use `getByPrefix()` instead for pattern matching.
+</Warning>
+
+---
+
+API Client Patterns
+
+Frontend API Client
+
+Located in `/utils/api.ts`:
+
+Authentication
+
+```typescript
+// Sign up
+const result = await signUp({
+  email: 'user@example.com',
+  password: 'secure123',
+  name: 'John Doe',
+  userType: 'master',
+  ageCategory: 'mantis'
+})
+
+// Sign in
+const result = await signIn({
+  email: 'user@example.com',
+  password: 'secure123'
+})
+
+// Get profile
+const profile = await getProfile(accessToken)
+```
+
+Task Operations
+
+```typescript
+// Get tasks
+const result = await getTasks(accessToken)
+// Returns: { tasks: Task[] }
+
+// Create task
+const task = await createTask(accessToken, {
+  title: 'Complete homework',
+  category: 'academic',
+  basePoints: 10,
+  requiresApproval: false,
+  createdBy: 'master'
+})
+
+// Complete task
+const result = await completeTask(accessToken, taskId, quality)
+// Returns: { pointsEarned, currentPoints, beltLevel, ... }
+
+// Delete task
+await deleteTask(accessToken, taskId)
+
+// Update task
+await updateTask(accessToken, taskId, {
+  title: 'New title',
+  basePoints: 15
+})
+```
+
+Disciple Operations (Sensei only)
+
+```typescript
+// Create disciple
+const disciple = await createDisciple(accessToken, {
+  name: 'Student Name',
+  ageCategory: 'cricket',
+  email: 'student@example.com',  // optional
+  password: 'temp123'             // optional
+})
+
+// Get disciples
+const disciples = await getDisciples(accessToken)
+
+// Approve task
+await approveTask(accessToken, taskId, {
+  approved: true,
+  quality: 4,
+  note: 'Great work!'
+})
+```
+
+---
+
+Server-Side Patterns
+
+Route Structure
+
+Located in `/supabase/functions/server/index.tsx`:
+
+```typescript
+import { Hono } from 'npm:hono'
+import * as kv from './kv_store.tsx'
+
+const app = new Hono()
+
+// Middleware: Extract user from auth token
+app.use('*', async (c, next) => {
+  const token = c.req.header('Authorization')?.split(' ')[1]
+  if (token) {
+    const { data: { user } } = await supabase.auth.getUser(token)
+    c.set('user', user)
+  }
+  await next()
+})
+
+// Route: Get profile
+app.get('/profile', async (c) => {
+  const user = c.get('user')
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
+  
+  const profile = await kv.get(`user:${user.id}`)
+  return c.json({ profile })
+})
+
+// Route: Create task
+app.post('/tasks', async (c) => {
+  const user = c.get('user')
+  const body = await c.req.json()
+  
+  const taskId = crypto.randomUUID()
+  const task = {
+    id: taskId,
+    userId: user.id,
+    ...body,
+    completed: false,
+    createdAt: new Date().toISOString()
+  }
+  
+  await kv.set(`task:${taskId}`, task)
+  await kv.set(`user:${user.id}:task:${taskId}`, task)
+  
+  return c.json({ task })
+})
+
+Deno.serve(app.fetch)
+```
+
+---
+
+Data Consistency Patterns
+
+Denormalization
+
+Store same data in multiple keys for fast lookups:
+
+```typescript
+// Store task in multiple locations
+await kv.mset(
+  [
+    `task:${taskId}`,              // Global task lookup
+    `user:${userId}:task:${taskId}` // User's task list
+  ],
+  [task, task]
+)
+
+// Fast retrieval
+const task = await kv.get(`task:${taskId}`)          // By ID
+const userTasks = await kv.getByPrefix(`user:${userId}:task:`) // By user
+```
+
+Atomic Updates
+
+Update all copies atomically:
+
+```typescript
+async function completeTask(userId: string, taskId: string) {
+  // Get current data
+  const task = await kv.get(`task:${taskId}`)
+  
+  // Update
+  const updated = { ...task, completed: true, completedAt: new Date() }
+  
+  // Write to all locations
+  await kv.mset(
+    [`task:${taskId}`, `user:${userId}:task:${taskId}`],
+    [updated, updated]
+  )
+  
+  return updated
+}
+```
+
+Profile Updates
+
+Update profile and recalculate derived data:
+
+```typescript
+async function awardPoints(userId: string, points: number) {
+  const profile = await kv.get(`user:${userId}`)
+  
+  // Update points
+  profile.points += points
+  
+  // Recalculate belt
+  profile.beltLevel = calculateBelt(profile.points, profile.ageCategory)
+  
+  // Update streak
+  const today = new Date().toDateString()
+  if (profile.lastActiveDate !== today) {
+    profile.streak = isConsecutiveDay(profile.lastActiveDate) 
+      ? profile.streak + 1 
+      : 1
+    profile.lastActiveDate = today
+  }
+  
+  // Save
+  await kv.set(`user:${userId}`, profile)
+  
+  return profile
+}
+```
+
+---
+
+Querying Patterns
+
+Get All User Tasks
+
+```typescript
+// Method 1: By prefix (recommended)
+const tasks = await kv.getByPrefix(`user:${userId}:task:`)
+
+// Method 2: Store task IDs separately
+const taskIds = await kv.get(`user:${userId}:taskIds`) || []
+const tasks = await kv.mget(taskIds.map(id => `task:${id}`))
+```
+
+Filter Tasks
+
+```typescript
+// Get all tasks, then filter in memory
+const allTasks = await kv.getByPrefix(`user:${userId}:task:`)
+
+const pending = allTasks.filter(t => !t.completed)
+const academic = allTasks.filter(t => t.category === 'academic')
+const requiresApproval = allTasks.filter(t => t.requiresApproval && t.completed && !t.approved)
+```
+
+<Info>
+For small datasets (<1000 records), in-memory filtering is fast and simple. For larger datasets, consider indexing strategies.
+</Info>
+
+Pagination
+
+```typescript
+async function getTasksPaginated(userId: string, page = 0, limit = 50) {
+  const allTasks = await kv.getByPrefix(`user:${userId}:task:`)
+  
+  // Sort by date
+  const sorted = allTasks.sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+  
+  // Paginate
+  const start = page * limit
+  const end = start + limit
+  const tasks = sorted.slice(start, end)
+  
+  return {
+    tasks,
+    pagination: {
+      page,
+      limit,
+      total: allTasks.length,
+      hasMore: end < allTasks.length
+    }
+  }
+}
+```
+
+---
+
+Error Handling
+
+Server-Side
+
+```typescript
+app.post('/tasks', async (c) => {
+  try {
+    const user = c.get('user')
+    if (!user) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    
+    const body = await c.req.json()
+    
+    // Validate
+    if (!body.title) {
+      return c.json({ error: 'Title is required' }, 400)
+    }
+    
+    // Create task
+    const task = await createTask(user.id, body)
+    
+    return c.json({ task }, 201)
+    
+  } catch (error) {
+    console.error('Error creating task:', error)
+    return c.json({ 
+      error: 'Failed to create task',
+      details: error.message 
+    }, 500)
+  }
+})
+```
+
+Client-Side
+
+```typescript
+export async function createTask(accessToken: string, taskData: any) {
+  try {
+    const response = await fetch(`${API_URL}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(taskData)
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to create task')
+    }
+    
+    return await response.json()
+    
+  } catch (error) {
+    console.error('API Error:', error)
+    throw error
+  }
+}
+```
+
+---
+
+Caching Strategies
+
+Client-Side Caching
+
+```typescript
+// Simple in-memory cache
+const cache = new Map<string, { data: any, timestamp: number }>()
+const CACHE_TTL = 60000 // 1 minute
+
+async function getCachedProfile(accessToken: string) {
+  const cached = cache.get('profile')
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data
+  }
+  
+  const profile = await getProfile(accessToken)
+  cache.set('profile', { data: profile, timestamp: Date.now() })
+  
+  return profile
+}
+```
+
+Optimistic Updates
+
+```typescript
+async function completeTask(taskId: string) {
+  // 1. Update UI immediately
+  setTasks(prev => prev.map(t => 
+    t.id === taskId ? { ...t, completed: true } : t
+  ))
+  
+  try {
+    // 2. Send to server
+    await completeTaskAPI(taskId)
+  } catch (error) {
+    // 3. Rollback on error
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, completed: false } : t
+    ))
+    throw error
+  }
+}
+```
+
+---
+
+Performance Optimization
+
+Batch Operations
+
+```typescript
+// ❌ Bad: Multiple individual requests
+for (const taskId of taskIds) {
+  await kv.del(`task:${taskId}`)
+}
+
+// ✅ Good: Single batch request
+await kv.mdel(taskIds.map(id => `task:${id}`))
+```
+
+Parallel Requests
+
+```typescript
+// ✅ Fetch multiple resources in parallel
+const [profile, tasks, disciples] = await Promise.all([
+  kv.get(`user:${userId}`),
+  kv.getByPrefix(`user:${userId}:task:`),
+  kv.get(`user:${userId}:disciples`)
+])
+```
+
+Lazy Loading
+
+```typescript
+// Load heavy data only when needed
+const [showInsights, setShowInsights] = useState(false)
+
+async function loadInsights() {
+  if (showInsights) {
+    const insights = await getInsights(accessToken)
+    setInsights(insights)
+  }
+}
+
+useEffect(() => {
+  loadInsights()
+}, [showInsights])
+```
+
+---
+
+Data Migration
+
+Adding New Fields
+
+```typescript
+// Migrate all users to add new field
+async function migrateUsersAddStreak() {
+  const userKeys = await kv.getByPrefix('user:')
+  
+  for (const key of userKeys) {
+    const user = await kv.get(key)
+    
+    // Add new field if missing
+    if (user.streak === undefined) {
+      user.streak = 0
+      user.lastActiveDate = null
+      await kv.set(key, user)
+    }
+  }
+}
+```
+
+Data Cleanup
+
+```typescript
+// Remove orphaned tasks
+async function cleanupOrphanedTasks() {
+  const allTasks = await kv.getByPrefix('task:')
+  
+  for (const task of allTasks) {
+    // Check if user exists
+    const user = await kv.get(`user:${task.userId}`)
+    
+    if (!user) {
+      // Delete orphaned task
+      await kv.del(`task:${task.id}`)
+      console.log(`Deleted orphaned task: ${task.id}`)
+    }
+  }
+}
+```
+
+---
+
+Testing Data Access
+
+```typescript
+// Mock KV store for tests
+const mockKV = {
+  store: new Map(),
+  get: async (key: string) => mockKV.store.get(key),
+  set: async (key: string, value: any) => mockKV.store.set(key, value),
+  del: async (key: string) => mockKV.store.delete(key),
+  getByPrefix: async (prefix: string) => {
+    return Array.from(mockKV.store.entries())
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, value]) => value)
+  }
+}
+
+// Test
+describe('Task Creation', () => {
+  it('should create task in KV store', async () => {
+    await mockKV.set('task:1', { id: '1', title: 'Test' })
+    const task = await mockKV.get('task:1')
+    expect(task.title).toBe('Test')
+  })
+})
+```
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
+    Overall system design
+  </Card>
+  
+  <Card title="Database Schema" icon="database" href="/technical/database">
+    Database structure
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Complete API documentation
+  </Card>
+  
+  <Card title="Testing" icon="vial" href="/technical/development/testing">
+    Test data operations
+  </Card>
+</CardGroup>
+
+---
+
+<Check>
+Data access is simple! Use the KV store utilities for flexible JSONB storage. Design keys carefully, denormalize for performance, and handle errors gracefully.
+</Check>
+```

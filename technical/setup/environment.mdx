@@ -1,0 +1,423 @@
+```mdx
+---
+title: Environment Setup
+description: Configure your development environment for Task Dojo
+---
+
+Prerequisites
+
+Before setting up Task Dojo, ensure you have the following installed:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node-js">
+    Version 18.x or higher
+    
+    Download from nodejs.org
+  </Card>
+  
+  <Card title="npm or pnpm" icon="box">
+    npm 9.x+ (comes with Node.js)
+    
+    Or pnpm for faster installs
+  </Card>
+  
+  <Card title="Git" icon="git">
+    Latest version
+    
+    Download from git-scm.com
+  </Card>
+  
+  <Card title="Supabase CLI" icon="database">
+    Latest version
+    
+    ```bash
+    npm install -g supabase
+    ```
+  </Card>
+</CardGroup>
+
+---
+
+Supabase Project Setup
+
+1. Create Supabase Project
+
+<Steps>
+  <Step title="Sign up for Supabase">
+    Go to supabase.com and create an account if you don't have one.
+  </Step>
+
+  <Step title="Create New Project">
+Click "New Project"
+Choose organization
+Enter project name: `task-dojo`
+Set database password (save this!)
+Choose region (closest to users)
+Click "Create Project"
+    
+    <Info>Project creation takes 1-2 minutes</Info>
+  </Step>
+
+  <Step title="Note Project Credentials">
+    From Project Settings → API:
+    
+Project URL: `https://xxxxx.supabase.co`
+Anon/Public Key: `eyJhbGc...` (safe for frontend)
+Service Role Key: `eyJhbGc...` (NEVER expose!)
+    
+    <Warning>
+    Keep the Service Role Key secret! It has full database access.
+    </Warning>
+  </Step>
+</Steps>
+
+---
+
+2. Set Up Database
+
+<Steps>
+  <Step title="Create KV Store Table">
+    In Supabase Dashboard → SQL Editor, run:
+    
+    ```sql
+    CREATE TABLE kv_store_4010be06 (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Auto-update timestamp trigger
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    CREATE TRIGGER update_kv_store_updated_at
+      BEFORE UPDATE ON kv_store_4010be06
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+
+    -- Indexes for performance
+    CREATE INDEX idx_kv_prefix ON kv_store_4010be06 
+      USING btree (key text_pattern_ops);
+    
+    CREATE INDEX idx_kv_value ON kv_store_4010be06 
+      USING gin (value);
+    
+    CREATE INDEX idx_kv_created_at ON kv_store_4010be06 (created_at);
+    CREATE INDEX idx_kv_updated_at ON kv_store_4010be06 (updated_at);
+    ```
+  </Step>
+
+  <Step title="Verify Table Creation">
+    Run this query to confirm:
+    
+    ```sql
+    SELECT * FROM kv_store_4010be06 LIMIT 1;
+    ```
+    
+    Should return empty result (no error).
+  </Step>
+</Steps>
+
+---
+
+Frontend Environment Variables
+
+1. Create `.env` File
+
+In your project root, create `.env`:
+
+```bash .env
+Supabase Configuration
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+Intercom (optional)
+VITE_INTERCOM_APP_ID=your_app_id
+
+Development
+VITE_API_URL=https://xxxxx.supabase.co/functions/v1/make-server-4010be06
+```
+
+<Note>
+Never commit `.env` to version control! It's included in `.gitignore`.
+</Note>
+
+2. Environment Variable Reference
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_SUPABASE_URL` | ✅ Yes | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | ✅ Yes | Public anon key (safe to expose) |
+| `VITE_INTERCOM_APP_ID` | ❌ No | Intercom app ID for support |
+| `VITE_API_URL` | ✅ Yes | Backend API base URL |
+
+---
+
+Backend Environment Variables
+
+1. Link Supabase CLI
+
+```bash
+Link to your project
+supabase link --project-ref your-project-ref
+
+Verify connection
+supabase projects list
+```
+
+2. Set Supabase Secrets
+
+These are server-side only and never exposed to frontend:
+
+```bash
+Required
+supabase secrets set SUPABASE_URL=https://xxxxx.supabase.co
+supabase secrets set SUPABASE_ANON_KEY=eyJhbGc...
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # CRITICAL!
+supabase secrets set SUPABASE_DB_URL=postgresql://postgres:...
+
+Optional (if using Intercom)
+supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=your_secret
+
+Optional (if using AI features)
+supabase secrets set OPENAI_API_KEY=sk-...
+OR
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+```
+
+3. Verify Secrets
+
+```bash
+List all secrets (values are hidden)
+supabase secrets list
+
+Should show:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
+- SUPABASE_DB_URL
+- (optional ones if set)
+```
+
+<Warning>
+NEVER log or expose `SUPABASE_SERVICE_ROLE_KEY` in your code! It bypasses all security.
+</Warning>
+
+---
+
+Optional Integrations
+
+Intercom Setup
+
+<Steps>
+  <Step title="Create Intercom Account">
+Sign up at intercom.com
+Create workspace
+Note your App ID
+  </Step>
+
+  <Step title="Configure Identity Verification">
+In Intercom → Settings → Security
+Enable Identity Verification
+Copy secret key
+Set as Supabase secret:
+    
+    ```bash
+    supabase secrets set INTERCOM_IDENTITY_VERIFICATION_SECRET=your_secret
+    ```
+  </Step>
+
+  <Step title="Add to Frontend .env">
+    ```bash
+    VITE_INTERCOM_APP_ID=your_app_id
+    ```
+  </Step>
+</Steps>
+
+<Info>
+See Intercom Integration Guide for full setup.
+</Info>
+
+---
+
+AI Services Setup
+
+Choose one AI provider (or both):
+
+<Tabs>
+  <Tab title="OpenAI">
+    ```bash
+    # Get API key from platform.openai.com
+    supabase secrets set OPENAI_API_KEY=sk-...
+    ```
+    
+    Models used: GPT-4 for task decomposition
+    
+    Cost: ~$0.03 per breakdown request
+  </Tab>
+
+  <Tab title="Anthropic">
+    ```bash
+    # Get API key from console.anthropic.com
+    supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+    ```
+    
+    Models used: Claude 3 Sonnet for task decomposition
+    
+    Cost: ~$0.015 per breakdown request
+  </Tab>
+</Tabs>
+
+<Note>
+AI services are optional. Task Dojo works fully without them (users just can't use AI Feat Breakdown).
+</Note>
+
+---
+
+Verification Checklist
+
+Before proceeding to development, verify:
+
+<Steps>
+  <Step title="Database">
+[ ] Supabase project created
+[ ] `kv_store_4010be06` table created
+[ ] Indexes created successfully
+[ ] Can query table without errors
+  </Step>
+
+  <Step title="Frontend Environment">
+[ ] `.env` file exists
+[ ] `VITE_SUPABASE_URL` set correctly
+[ ] `VITE_SUPABASE_ANON_KEY` set correctly
+[ ] `VITE_API_URL` points to Edge Functions
+  </Step>
+
+  <Step title="Backend Environment">
+[ ] Supabase CLI linked to project
+[ ] All required secrets set
+[ ] Secrets list shows correct secrets
+[ ] No secrets exposed in code
+  </Step>
+
+  <Step title="Optional Integrations">
+[ ] Intercom configured (if using)
+[ ] AI service configured (if using)
+  </Step>
+</Steps>
+
+---
+
+Troubleshooting
+
+Can't Connect to Supabase
+
+Error: `Failed to fetch` or connection timeout
+
+Solutions:
+Verify `VITE_SUPABASE_URL` is correct (no trailing slash)
+Check project is not paused (free tier pauses after inactivity)
+Ensure internet connection is stable
+Try accessing Supabase dashboard directly
+
+---
+
+Invalid Anon Key
+
+Error: `Invalid API key` or `JWT expired`
+
+Solutions:
+Copy key again from Project Settings → API
+Ensure no extra spaces or line breaks
+Anon key is the public key, not service role key
+Restart dev server after changing `.env`
+
+---
+
+Secrets Not Working
+
+Error: `Environment variable not set`
+
+Solutions:
+Verify secrets are set: `supabase secrets list`
+Re-deploy Edge Functions after setting secrets
+Wait 30 seconds after setting secrets
+Ensure secret names match exactly (case-sensitive)
+
+---
+
+Table Not Found
+
+Error: `relation "kv_store_4010be06" does not exist`
+
+Solutions:
+Run the CREATE TABLE SQL again
+Verify you're connected to correct project
+Check SQL Editor for any errors
+Ensure database user has permissions
+
+---
+
+Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Local Development" icon="laptop-code" href="/technical/setup/local-development">
+    Run Task Dojo on your local machine
+  </Card>
+  
+  <Card title="Testing Setup" icon="vial" href="/technical/development/testing">
+    Configure and run tests
+  </Card>
+  
+  <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
+    Deploy to production
+  </Card>
+  
+  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
+    Understand the system design
+  </Card>
+</CardGroup>
+
+---
+
+Environment Templates
+
+`.env.example`
+
+Create this file for team members:
+
+```bash
+Supabase Configuration
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+
+Intercom (optional)
+VITE_INTERCOM_APP_ID=YOUR_INTERCOM_APP_ID
+
+API Configuration
+VITE_API_URL=https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06
+```
+
+`.env.production`
+
+For production deployments:
+
+```bash
+VITE_SUPABASE_URL=https://production-project.supabase.co
+VITE_SUPABASE_ANON_KEY=production_anon_key
+VITE_INTERCOM_APP_ID=production_app_id
+VITE_API_URL=https://production-project.supabase.co/functions/v1/make-server-4010be06
+```
+
+---
+
+<Note>
+Security Reminder: Never commit actual API keys or secrets to version control. Use `.env.example` as a template and have developers fill in their own values.
+</Note>
+```

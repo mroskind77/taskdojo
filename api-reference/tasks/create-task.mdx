@@ -1,8 +1,8 @@
 ```mdx
 ---
-title: Create Task
-api: POST /tasks
-description: Create a new task for a user
+title: "Create Task"
+api: "POST /tasks"
+description: "Create a new task for a user"
 ---
 
 Endpoint
@@ -125,7 +125,7 @@ Examples
 
 Master Creating Task
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST \
   https://{projectId}.supabase.co/functions/v1/make-server-4010be06/tasks \
@@ -182,10 +182,12 @@ response = requests.post(
 
 task = response.json()["task"]
 ```
-</CodeGroup>
+</RequestExample>
 
 Response:
-```json
+
+<ResponseExample>
+```json Success (200)
 {
   "task": {
     "id": "task:user_abc123:1704110400000:xyz789",
@@ -202,10 +204,11 @@ Response:
   }
 }
 ```
+</ResponseExample>
 
 Sensei Creating Task for Disciple
 
-<CodeGroup>
+<RequestExample>
 ```bash cURL
 curl -X POST \
   https://{projectId}.supabase.co/functions/v1/make-server-4010be06/tasks \
@@ -243,10 +246,12 @@ const response = await fetch(
 
 const { task } = await response.json()
 ```
-</CodeGroup>
+</RequestExample>
 
 Response:
-```json
+
+<ResponseExample>
+```json Success (200)
 {
   "task": {
     "id": "task:disciple_xyz789:1704110400000:abc123",
@@ -263,29 +268,30 @@ Response:
   }
 }
 ```
+</ResponseExample>
 
 Error Responses
 
 <ResponseExample>
-```json 401 Unauthorized
+```json Error - Unauthorized (401)
 {
   "error": "Unauthorized"
 }
 ```
 
-```json 403 Forbidden - Sensei Permission
+```json Error - Forbidden (403)
 {
   "error": "Unauthorized to create tasks for this user"
 }
 ```
 
-```json 400 Bad Request - Missing Fields
+```json Error - Missing Fields (400)
 {
   "error": "Missing required fields: title, category, points, icon"
 }
 ```
 
-```json 500 Internal Server Error
+```json Error - Server Error (500)
 {
   "error": "Failed to create task"
 }

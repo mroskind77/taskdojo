@@ -1,0 +1,919 @@
+```mdx
+Troubleshooting Guide
+
+Overview
+
+Task Dojo is designed to work smoothly, but sometimes you might encounter issues or have questions about unexpected behavior. This guide covers common problems, their solutions, and how to get help when needed.
+
+---
+
+Quick Diagnostics
+
+Is It Working?
+
+First, check these:
+✅ Can you log in?
+✅ Can you see your dashboard?
+✅ Can you create a feat?
+✅ Can you complete a feat?
+✅ Do points update?
+
+If any fail, see relevant section below.
+
+---
+
+Account & Login Issues
+
+Can't Log In
+
+Symptoms:
+"Invalid credentials" error
+Login page keeps reloading
+Can't remember password
+
+Solutions:
+
+Wrong email/password:
+Double-check spelling
+Check caps lock
+Try password manager if used
+Contact Sensei (if disciple account)
+
+Forgot password:
+(Future feature) Click "Forgot Password"
+Currently: Contact support via Intercom
+Sensei can reset disciple passwords
+
+Account doesn't exist:
+Did you complete signup?
+Check spam folder for confirmation email
+Try signing up again (may already exist)
+
+---
+
+Logged Out Unexpectedly
+
+Symptoms:
+Session expired message
+Kicked back to login page
+Lost work in progress
+
+Causes:
+Session timeout (inactivity)
+Browser cleared cookies
+Multiple tab/window conflicts
+
+Solutions:
+Log back in (data is saved)
+Avoid long periods of inactivity
+Don't clear cookies during session
+Use one browser tab for Task Dojo
+
+Prevention:
+Stay logged in checkbox (if available)
+Bookmark dashboard directly
+Regular saves (auto-save enabled)
+
+---
+
+Feat Management Issues
+
+Can't Create Feat
+
+Symptoms:
+"Create Feat" button doesn't work
+Form won't submit
+Error message appears
+
+Common causes:
+
+Missing required fields:
+Title is required
+Category is required
+Difficulty/points is required
+Solution: Fill in all required fields
+
+Connection error:
+Network timeout
+Server temporarily unavailable
+Solution: Check internet connection, try again
+
+Browser issue:
+Old cached version
+JavaScript error
+Solution: Refresh page (Ctrl+F5 or Cmd+Shift+R)
+
+---
+
+Feat Won't Delete
+
+Symptoms:
+Delete button doesn't work
+Feat reappears after deletion
+Error message
+
+Solutions:
+Refresh page and try again
+Check if feat is pending approval (disciples)
+Clear browser cache
+Contact support if persists
+
+Workaround:
+Leave feat incomplete
+Hide from view mentally
+Report bug via Intercom
+
+---
+
+Can't Find My Feat
+
+Symptoms:
+Created feat disappeared
+Can't see feat in list
+
+Possible causes:
+
+Category filter active:
+Check if you're filtering by category
+Click "All" to see all feats
+Most common cause!
+
+Deleted accidentally:
+Check if confirmation dialog appeared
+Feats are immediately deleted
+Can't recover (future: trash/archive)
+
+Different account:
+Are you logged into correct account?
+Sensei vs. disciple accounts separate
+Check account name in top right
+
+Solution: Click "All" filter first!
+
+---
+
+Completion & Points Issues
+
+Points Not Updating
+
+Symptoms:
+Completed feat, no points awarded
+Points stuck at old total
+Points calculation seems wrong
+
+For Masters:
+
+Check completion:
+Did you complete AND rate quality?
+Both steps required
+Points awarded after quality rating
+
+Refresh page:
+Sometimes display doesn't update immediately
+Refresh to see updated points
+Background calculation may be delayed
+
+Calculate manually:
+```
+Expected = Base Points × Quality × Streak Bonus × Age Multiplier
+```
+
+Compare to actual points earned
+
+---
+
+For Disciples:
+
+Most common cause: Not approved yet
+Points awarded AFTER Sensei approval
+Not when you request approval
+Check "Pending Approvals" status
+
+Sensei hasn't reviewed:
+Wait for approval
+Message Sensei if it's been 24+ hours
+Points will appear after approval
+
+---
+
+Celebration Didn't Appear
+
+Symptoms:
+Completed feat, no confetti
+No celebration animation
+Missing celebration message
+
+Causes:
+
+Accessibility settings:
+Reduced motion enabled
+Celebrations automatically simplified
+Check Settings → Accessibility
+
+Browser issue:
+Animation blocked
+JavaScript error
+Solution: Refresh and try another feat
+
+Disciple specific:
+Celebrations happen after Sensei approval
+Not when requesting approval
+Wait for approval to see celebration
+
+---
+
+Quality Rating Seems Wrong
+
+For Disciples:
+Sensei rates quality, not you
+Their rating determines points
+This is intentional for learning
+Discuss with Sensei if concerned
+
+For Masters:
+Did you select correct rating?
+Check points calculation
+Each rating has specific multiplier:
+Poor: 0.5x
+Fair: 0.75x
+Good: 1.0x
+Excellent: 1.5x
+
+---
+
+Streak Issues
+
+Streak Broke Unexpectedly
+
+Symptoms:
+Had a streak, now it's 0
+Think you completed a feat yesterday
+Streak broken but completed today
+
+Common causes:
+
+Didn't complete within 24 hours:
+Streaks require at least 1 feat per day
+Midnight-to-midnight in YOUR timezone
+If you completed at 11pm Monday and 1am Wednesday, you missed Tuesday
+
+Timezone issue:
+Check Settings → Profile → Timezone
+Incorrect timezone causes streak miscounts
+Update to your actual timezone
+
+For disciples - approval timing:
+Streak counts when you COMPLETE, not when approved
+But must complete something each day
+Sensei approval timing doesn't affect streak
+
+Solution:
+Use Grace Token if you have one (Streak Savior)
+Or accept reset and start fresh
+Streaks will break eventually—that's normal
+
+---
+
+Streak Savior Didn't Appear
+
+Symptoms:
+Streak broke but no Rescue Quest option
+Expected Grace Token, didn't appear
+
+Possible causes:
+
+No Grace Tokens available:
+Only 2 per rolling 7-day window
+Check if you already used both
+Wait for rolling window reset
+
+Haven't broken a streak:
+Streak Savior only appears AFTER break
+Not preventatively before break
+Complete a feat to avoid needing it
+
+Browser refresh needed:
+Close and reopen Task Dojo
+Should appear on next login after streak breaks
+
+---
+
+Belt & Avatar Issues
+
+Belt Not Advancing
+
+Symptoms:
+Reached points requirement
+Belt hasn't changed
+Still showing old belt
+
+Checks:
+
+Did you actually reach requirement?
+Check current points
+Check belt requirement
+Account for age multiplier adjustments
+Your "effective" points may differ from displayed
+
+Points calculation:
+```
+Age-adjusted points = Raw points × Age multiplier
+```
+
+Example: Cricket (1.2x) with 130 raw points = 156 effective points
+Enough for Yellow Belt (150)!
+
+Refresh page:
+Belt updates should be automatic
+Try refreshing browser
+Log out and back in
+
+Still stuck:
+Contact support via Intercom
+Include current points and belt level
+Screenshot helpful
+
+---
+
+Avatar Won't Unlock
+
+Symptoms:
+Met achievement requirement
+Avatar still locked
+Can't select new avatar
+
+Verify requirement:
+
+Belt avatars:
+Must reach that exact belt level
+Not just points, actual belt advancement
+
+Achievement avatars:
+Check Achievements page
+Verify achievement actually unlocked
+Some requirements are cumulative
+
+Common examples:
+Streak Lightning: Need 30-day active streak (not just longest ever)
+Task Warrior: Need 100 completed feats (check completion count)
+Perfect Week: 7 consecutive days of Good+ quality (no Poor/Fair)
+
+Still locked:
+Refresh page
+Check achievements list
+Contact support if genuinely met requirement
+
+---
+
+Sensei-Specific Issues
+
+Can't See Disciple's Feats
+
+Symptoms:
+Disciple list shows disciple
+Can't see their feat list
+Approval queue empty but disciple claims completions
+
+Solutions:
+
+Select disciple first:
+Click on disciple name/card
+Their feats load separately
+Must select to view
+
+No pending approvals:
+Maybe disciple hasn't completed anything yet
+Or already approved everything
+Check with disciple
+
+Permission issue:
+Log out and back in
+Verify you're logged into Sensei account
+Not disciple account accidentally
+
+---
+
+Approval Not Working
+
+Symptoms:
+Click "Approve" button
+Nothing happens
+Error message appears
+
+Solutions:
+
+Must rate quality first:
+Select quality rating (1-5 stars)
+THEN click approve
+Both required
+
+Write note (recommended):
+Some systems require note
+Write even brief note
+Then approve
+
+Connection issue:
+Check internet
+Try refreshing page
+Approval might have worked (check queue)
+
+Browser issue:
+Clear cache
+Try different browser
+Update browser to latest version
+
+---
+
+Multiple Disciples Not Loading
+
+Symptoms:
+Can see some disciples, not others
+Disciple count doesn't match expected
+List seems incomplete
+
+Solutions:
+
+Scroll down:
+More disciples below fold
+No pagination, just scroll
+
+Filter active:
+Check for active filters
+"Show only active" or similar
+Clear all filters
+
+Account issue:
+Were they created under different Sensei account?
+Each Sensei sees only their disciples
+Can't share disciples between Senseis
+
+---
+
+Technical Issues
+
+Page Won't Load
+
+Symptoms:
+White screen
+Spinning loader forever
+"Something went wrong" error
+
+Quick fixes:
+
+Refresh page:
+Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+Hard refresh clears cache
+
+Check internet:
+Load other websites
+Check WiFi connection
+Try mobile data if available
+
+Clear cache/cookies:
+Browser settings
+Clear browsing data
+Last 24 hours
+Reload Task Dojo
+
+Try different browser:
+Chrome, Firefox, Safari, Edge
+If works in other browser = browser-specific issue
+Update original browser
+
+---
+
+Buttons Not Responding
+
+Symptoms:
+Click button, nothing happens
+Hover effects work but click doesn't
+Intermittent clicking
+
+Solutions:
+
+Disable browser extensions:
+Ad blockers can break functionality
+Temporarily disable extensions
+Test if Task Dojo works
+Re-enable one by one to find culprit
+
+JavaScript disabled:
+Task Dojo requires JavaScript
+Check browser settings
+Enable JavaScript for site
+
+Mobile touch issues:
+Screen protector interfering?
+Try different part of screen
+Restart device
+
+---
+
+Data Not Saving
+
+Symptoms:
+Create feat, disappears on refresh
+Changes don't persist
+Feels like session isn't saving
+
+Causes:
+
+Not logged in:
+Check if you're actually logged in
+Session expired
+Log in again
+
+Network interruption:
+Lost connection mid-save
+Data didn't reach server
+Check connection stability
+
+Browser private/incognito mode:
+Some features may not work
+Use normal browser window
+Cookies/storage required
+
+---
+
+Focus Timer Issues
+
+Timer Won't Start
+
+Symptoms:
+Click play, timer doesn't begin
+Stays at starting duration
+No countdown
+
+Solutions:
+
+Set duration first:
+Must have valid duration (5-90 minutes)
+0 or invalid = won't start
+Check settings
+
+Close and reopen:
+Timer modal might be stuck
+Close timer
+Open again from feat or dashboard
+
+Browser permissions:
+Some browsers block timers in background
+Keep Task Dojo tab active during timer
+
+---
+
+Timer Stopped Unexpectedly
+
+Symptoms:
+Timer was running, now stopped
+Lost progress on session
+Can't resume
+
+Common causes:
+
+Closed modal:
+Closing timer = stops timer
+Can't resume partial sessions
+Restart if needed
+
+Browser tab inactive too long:
+Background tabs may pause JavaScript
+Keep tab active during focus session
+Or use browser that doesn't throttle
+
+Connection lost:
+Timer runs client-side
+But may pause on disconnect
+Reconnect and restart
+
+---
+
+AI Feat Breakdown Issues
+
+AI Breakdown Not Working
+
+Symptoms:
+Click "Generate Steps"
+Nothing happens
+Error message appears
+
+Possible causes:
+
+API not configured:
+Administrator must set up OpenAI API key
+Not user-level issue
+Contact administrator or use Intercom
+
+Network timeout:
+AI requests take 3-10 seconds
+Wait patiently
+Don't click multiple times
+
+API rate limit:
+Too many requests in short time
+Wait 60 seconds
+Try again
+
+---
+
+AI Suggestions Are Bad
+
+Symptoms:
+Generated sub-feats don't make sense
+Steps are out of order
+Not relevant to your feat
+
+Solutions:
+
+Customize heavily:
+AI provides starting point, not perfection
+Edit, reorder, delete, add
+Make it work for your specific needs
+
+Try different feat description:
+More detail in description = better suggestions
+Add context AI might need
+Re-run breakdown
+
+Create manually instead:
+Skip AI entirely
+Create sub-feats yourself
+You know your needs best
+
+---
+
+Mobile Issues
+
+Mobile Layout Broken
+
+Symptoms:
+Elements overlapping
+Text cut off
+Buttons inaccessible
+
+Solutions:
+
+Rotate device:
+Try landscape vs. portrait
+Some views optimize for orientation
+
+Zoom level:
+Reset browser zoom to 100%
+Pinch to reset on mobile
+Don't zoom page
+
+Update app/browser:
+If using mobile browser, update it
+Clear mobile browser cache
+Try different mobile browser
+
+Future:
+Native mobile app (planned)
+Better mobile responsiveness coming
+
+---
+
+Accessibility Issues
+
+Can't Read Text
+
+Symptoms:
+Text too small
+Color contrast too low
+Font hard to read
+
+Solutions:
+
+Settings → Accessibility:
+Increase text size slider
+Enable dyslexia-friendly font
+High contrast mode (if available)
+
+Browser zoom:
+Ctrl/Cmd + Plus to zoom in
+Works in addition to built-in settings
+
+Screen reader:
+Task Dojo supports screen readers
+May need to enable specifically
+Contact support for ARIA issues
+
+---
+
+Animations Causing Issues
+
+Symptoms:
+Confetti makes you dizzy
+Celebrations overwhelming
+Motion sensitivity triggered
+
+Solution:
+
+Settings → Accessibility → Reduce Motion:
+Disables celebration animations
+Simplifies transitions
+Keeps functionality, removes effects
+
+Operating system:
+Enable Reduce Motion at OS level
+Task Dojo respects system preference
+Works automatically
+
+---
+
+Getting Help
+
+Built-in Support
+
+Intercom chat (recommended):
+Click chat icon (bottom right)
+Describe your issue
+Include:
+What you were trying to do
+What happened instead
+Any error messages
+Browser and device info
+
+Response time:
+Usually within 24 hours
+Faster for urgent issues
+Check email for responses
+
+---
+
+Self-Service Resources
+
+Documentation:
+This guide you're reading!
+User guide sections
+Sensei guides
+Feature-specific guides
+
+Try searching:
+Ctrl+F on this page
+Look for your specific issue
+Similar problems may have solutions
+
+---
+
+Information to Include When Reporting
+
+Always provide:
+✅ Account type (Master, Sensei, Disciple)
+✅ What you were trying to do
+✅ What happened instead
+✅ Error message (exact text)
+✅ Browser and version
+✅ Device (desktop, mobile, tablet)
+
+Helpful extras:
+Screenshot of error
+Steps to reproduce
+When it started happening
+If it happens consistently
+
+Example good report:
+>
+ "I'm a Sensei trying to approve a disciple's feat. When I click 'Approve' after rating quality as Good and writing a note, nothing happens. No error message. Using Chrome 120 on Windows 11. Started happening today, worked fine yesterday."
+
+---
+
+Known Issues & Limitations
+
+Current Limitations
+
+Features not yet implemented:
+Timeliness bonuses (planned)
+Account type switching (planned)
+Disciple → Master graduation (planned)
+Email notifications (partial)
+Native mobile app (planned)
+Feat recurring schedules (planned)
+
+Browser requirements:
+JavaScript must be enabled
+Cookies must be enabled
+Modern browser required (updated within last 2 years)
+Some features require internet connection
+
+---
+
+Workarounds for Common Limitations
+
+Can't change account type:
+Create new account with correct type
+Contact support for data migration
+
+Can't edit age category:
+Contact support
+Choose carefully during onboarding
+
+Can't recover deleted feat:
+No undo currently
+Recreate feat manually
+Future: trash/archive feature
+
+Can't transfer disciple:
+Contact support for assistance
+Manual process currently
+
+---
+
+Emergency Contacts
+
+When to Contact Support Urgently
+
+Urgent issues:
+🚨 Can't log in at all
+🚨 Lost access to account
+🚨 Data appears corrupted/missing
+🚨 Security concern
+🚨 Payment/billing issue
+
+How to reach urgently:
+Intercom chat (mark as urgent)
+Explain it's urgent in first message
+Include all relevant details
+Check email for response
+
+---
+
+Non-Urgent Issues
+
+Can wait for normal response:
+Minor bugs
+Feature requests
+General questions
+Clarifications on how things work
+
+Use:
+Intercom chat (normal priority)
+Check documentation first
+Try troubleshooting yourself
+Then contact if still stuck
+
+---
+
+Preventing Future Issues
+
+Best Practices
+
+Regular habits:
+✅ Log out properly (don't just close browser)
+✅ Keep browser updated
+✅ Clear cache monthly
+✅ Use strong internet connection
+✅ Save/complete actions before closing
+
+Avoid:
+❌ Multiple tabs/windows of Task Dojo
+❌ Extremely long sessions without refresh
+❌ Clicking rapidly on buttons
+❌ Ignoring update prompts
+
+---
+
+Still Stuck?
+
+If this guide didn't help:
+
+Search documentation - Other guides may have answers
+Try Intercom chat - Describe your specific issue
+Include details - More info = faster solution
+Be patient - Support will help resolve
+
+Remember: Most issues have simple solutions. Don't hesitate to ask for help!
+
+---
+
+Common Questions
+
+Q: Is my data safe if I encounter a bug?  
+A: Yes! Data is stored server-side. Bugs usually affect display, not data storage.
+
+Q: Will I lose my streak if there's a technical issue?  
+A: Contact support. They can verify and potentially restore streaks for genuine technical issues.
+
+Q: Can I get a refund if Task Dojo doesn't work for me?  
+A: Contact support to discuss. Most issues are solvable, but they'll work with you.
+
+Q: How do I report a security concern?  
+A: Use Intercom marked as urgent, or email security contact (if provided in app).
+
+Q: Can I request a feature?  
+A: Yes! Use Intercom to submit feature requests. They're logged and considered for roadmap.
+
+---
+
+Related Topics
+
+Onboarding Guide - Getting started correctly prevents issues
+Sensei Guide - Sensei-specific troubleshooting
+Account Types - Understanding your account capabilities
+
+---
+
+Most issues have quick fixes! Start with refreshing the page, checking filters, and verifying you completed all steps. If stuck, Intercom support is here to help. Don't struggle alone—reach out!
+
+We're here to help you succeed. 🥋
+```

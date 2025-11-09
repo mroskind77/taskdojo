@@ -1,4 +1,3 @@
-```mdx
 ---
 title: "Sign Up"
 api: "POST /make-server-4010be06/signup"
@@ -28,18 +27,18 @@ Request Body
 <ParamField body="userType" type="string" required>
   Account type: `master`, `sensei`, or `disciple`.
   
-master: Independent user
-sensei: Mentor who manages disciples
-disciple: User who requires sensei approval
+  master: Independent user
+  sensei: Mentor who manages disciples
+  disciple: User who requires sensei approval
 </ParamField>
 
 <ParamField body="ageCategory" type="string" required>
   Age bracket for point multipliers:
   
-`grasshopper`: 5-8 years (1.0x multiplier)
-`cricket`: 9-12 years (1.2x multiplier)
-`stickbug`: 13-15 years (1.5x multiplier)
-`mantis`: 16+ years (2.0x multiplier)
+  `grasshopper`: 5-8 years (1.0x multiplier)
+  `cricket`: 9-12 years (1.2x multiplier)
+  `stickbug`: 13-15 years (1.5x multiplier)
+  `mantis`: 16+ years (2.0x multiplier)
 </ParamField>
 
 <ParamField body="senseiId" type="string">
@@ -294,4 +293,3 @@ Related Endpoints
 Sign In - Authenticate existing user
 Get Profile - Retrieve user profile
 Create Disciple - Sensei creates disciple (alternative flow)
-```

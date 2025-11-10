@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Disciples -> Get Disciples"
+description: "Retrieve all disciples for the authenticated sensei"
+---
+
 ```mdx
 ---
 title: 'Get Disciples (Sensei)'
@@ -6,10 +11,11 @@ description: 'Retrieve all disciples for the authenticated sensei'
 ---
 
 Endpoint
+```
 
-```
 GET /make-server-4010be06/disciples
-```
+
+````
 
 Sensei-only endpoint. Get list of all disciples linked to the sensei.
 
@@ -86,7 +92,7 @@ const { disciples } = await response.json()
 disciples.forEach(disciple => {
   console.log(`${disciple.name} - ${disciple.beltLevel} belt - ${disciple.points} points`)
 })
-```
+````
 
 Full Profiles
 
@@ -171,17 +177,20 @@ Full Profile Response
 Error Responses
 
 <ResponseExample>
+
 ```json 403 - Not a Sensei
 {
   "error": "Only sensei accounts can view disciples"
 }
 ```
 
+
 ```json 401 - Unauthorized
 {
   "error": "Unauthorized"
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -242,11 +251,11 @@ async function calculateInsights() {
 Performance Considerations
 
 <Tip>
-Use `full=false` for list views to reduce payload size and improve load times.
+  Use `full=false` for list views to reduce payload size and improve load times.
 </Tip>
 
 <Info>
-Cache disciple data locally and only refresh when needed (e.g., after task approval).
+  Cache disciple data locally and only refresh when needed (e.g., after task approval).
 </Info>
 
 ---
@@ -254,11 +263,11 @@ Cache disciple data locally and only refresh when needed (e.g., after task appro
 Notes
 
 <Info>
-Only returns disciples linked to the authenticated sensei. Cannot view other senseis' disciples.
+  Only returns disciples linked to the authenticated sensei. Cannot view other senseis' disciples.
 </Info>
 
 <Tip>
-Empty array is returned if sensei has no disciples yet.
+  Empty array is returned if sensei has no disciples yet.
 </Tip>
 
 ---
@@ -269,17 +278,13 @@ Next Steps
   <Card title="Create Disciple" icon="user-plus" href="/api-reference/disciples/create-disciple">
     Add new disciple
   </Card>
-  
   <Card title="Get Tasks" icon="list" href="/api-reference/tasks/get-tasks">
     View disciple's tasks
   </Card>
-  
   <Card title="Approve Task" icon="check-circle" href="/api-reference/tasks/approve-task">
     Approve completions
   </Card>
-  
   <Card title="Sensei Guide" icon="book" href="/user-guide/sensei/overview">
     Managing disciples
   </Card>
 </CardGroup>
-```

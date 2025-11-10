@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Auth -> Check Session"
+description: "Verify if user has an active session"
+---
+
 ```mdx
 ---
 title: 'Check Session'
@@ -6,9 +11,10 @@ description: 'Verify if user has an active session'
 ---
 
 Endpoint
-
 ```
+
 GET /make-server-4010be06/session
+
 ```
 
 Check if the provided access token is valid and return the associated user.
@@ -20,9 +26,11 @@ Headers
 <ParamField header="Authorization" type="string" required>
   Bearer token from sign in/sign up
   
-  ```
-  Authorization: Bearer YOUR_ACCESS_TOKEN
-  ```
+```
+
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+````
 </ParamField>
 
 ---
@@ -30,25 +38,25 @@ Headers
 Response
 
 <ResponseField name="user" type="object | null">
-  User object if session is valid, `null` if invalid
+User object if session is valid, `null` if invalid
+
+<Expandable title="user properties">
+  <ResponseField name="id" type="string">
+    User's unique identifier
+  </ResponseField>
   
-  <Expandable title="user properties">
-    <ResponseField name="id" type="string">
-      User's unique identifier
-    </ResponseField>
-    
-    <ResponseField name="email" type="string">
-      User's email address
-    </ResponseField>
-    
-    <ResponseField name="created_at" type="string">
-      ISO 8601 timestamp of account creation
-    </ResponseField>
-  </Expandable>
+  <ResponseField name="email" type="string">
+    User's email address
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    ISO 8601 timestamp of account creation
+  </ResponseField>
+</Expandable>
 </ResponseField>
 
 <ResponseField name="session" type="null">
-  Returns `null` if no valid session (for consistency with response format)
+Returns `null` if no valid session (for consistency with response format)
 </ResponseField>
 
 ---
@@ -57,26 +65,27 @@ Example Request
 
 ```typescript
 const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/session', {
-  method: 'GET',
-  headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+method: 'GET',
+headers: {
+  'Authorization': `Bearer ${accessToken}`
+}
 })
 
 const data = await response.json()
 
 if (data.user) {
-  console.log('Session valid:', data.user.id)
+console.log('Session valid:', data.user.id)
 } else {
-  console.log('No active session')
+console.log('No active session')
 }
-```
+````
 
 ---
 
 Example Responses
 
 <ResponseExample>
+
 ```json 200 - Valid Session
 {
   "user": {
@@ -87,11 +96,13 @@ Example Responses
 }
 ```
 
+
 ```json 200 - Invalid/Expired Session
 {
   "session": null
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -149,11 +160,11 @@ async function protectedRoute() {
 Notes
 
 <Info>
-This endpoint always returns 200 OK, even for invalid sessions. Check the `user` field to determine if session is valid.
+  This endpoint always returns 200 OK, even for invalid sessions. Check the `user` field to determine if session is valid.
 </Info>
 
 <Tip>
-Call this endpoint on app initialization to restore user session from stored access token.
+  Call this endpoint on app initialization to restore user session from stored access token.
 </Tip>
 
 ---
@@ -164,13 +175,10 @@ Next Steps
   <Card title="Sign In" icon="arrow-right-to-bracket" href="/api-reference/auth/signin">
     Authenticate user
   </Card>
-  
   <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
     Load user profile
   </Card>
-  
   <Card title="Sign Out" icon="arrow-right-from-bracket" href="/api-reference/auth/signout">
     End session
   </Card>
 </CardGroup>
-```

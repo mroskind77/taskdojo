@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Disciples -> Create Disciple"
+description: "Sensei creates a new disciple account"
+---
+
 ```mdx
 ---
 title: 'Create Disciple (Sensei)'
@@ -6,10 +11,11 @@ description: 'Sensei creates a new disciple account'
 ---
 
 Endpoint
+```
 
-```
 POST /make-server-4010be06/create-disciple
-```
+
+````
 
 Sensei-only endpoint. Create a new disciple account linked to the sensei. Automatically creates auth account and default tasks.
 
@@ -123,7 +129,7 @@ const { disciple } = await response.json()
 // Share credentials with disciple
 console.log(`Email: ${disciple.email}`)
 console.log('Password: tempPassword123')
-```
+````
 
 ---
 
@@ -159,35 +165,13 @@ Default Tasks Created
 
 Age-appropriate tasks are automatically created for the disciple:
 
-Grasshopper (6-9 years):
-Wake up on time (1 point)
-Get out of bed (1 point)
-Brush teeth - morning (1 point)
-Wash hands and face (1 point)
-Get dressed (2 points)
-Eat breakfast (2 points)
-Brush teeth - nighttime (1 point)
-Put on pajamas (1 point)
+Grasshopper (6-9 years): Wake up on time (1 point) Get out of bed (1 point) Brush teeth - morning (1 point) Wash hands and face (1 point) Get dressed (2 points) Eat breakfast (2 points) Brush teeth - nighttime (1 point) Put on pajamas (1 point)
 
-Cricket (10-12 years):
-Wake up on time (1 point)
-Morning routine (3 points)
-Eat breakfast (2 points)
-Pack backpack (2 points)
-Complete homework (5 points)
-Eat dinner (2 points)
-Evening routine (3 points)
+Cricket (10-12 years): Wake up on time (1 point) Morning routine (3 points) Eat breakfast (2 points) Pack backpack (2 points) Complete homework (5 points) Eat dinner (2 points) Evening routine (3 points)
 
-Stickbug (13-17 years):
-Morning routine (3 points)
-Complete homework (5 points)
-Study for tests (7 points)
-Evening routine (3 points)
+Stickbug (13-17 years): Morning routine (3 points) Complete homework (5 points) Study for tests (7 points) Evening routine (3 points)
 
-Mantis (18+ years):
-Morning routine (2 points)
-Daily responsibilities (5 points)
-Evening routine (2 points)
+Mantis (18+ years): Morning routine (2 points) Daily responsibilities (5 points) Evening routine (2 points)
 
 Sensei's Disciples List Updated
 
@@ -198,11 +182,13 @@ Disciple ID is automatically added to sensei's `disciples` array.
 Error Responses
 
 <ResponseExample>
+
 ```json 403 - Not a Sensei
 {
   "error": "Only sensei accounts can create disciples"
 }
 ```
+
 
 ```json 400 - Email Already Exists
 {
@@ -210,17 +196,20 @@ Error Responses
 }
 ```
 
+
 ```json 400 - Invalid Input
 {
   "error": "Email, password, name, and ageCategory are required"
 }
 ```
 
+
 ```json 401 - Unauthorized
 {
   "error": "Unauthorized"
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -280,23 +269,15 @@ async function createDiscipleAccount(discipleData: DiscipleInput) {
 Security Considerations
 
 <Warning>
-Password Management:
-Sensei creates the initial password
-Share securely with disciple (not via email/text)
-Recommend disciple changes password after first login
+  Password Management: Sensei creates the initial password Share securely with disciple (not via email/text) Recommend disciple changes password after first login
 </Warning>
 
 <Info>
-Email Verification:
-Emails are auto-confirmed (`email_confirm: true`)
-No email verification required since email server isn't configured
+  Email Verification: Emails are auto-confirmed (`email_confirm: true`) No email verification required since email server isn't configured
 </Info>
 
 <Tip>
-Best Practices:
-Use temporary, easy-to-remember passwords like `tempPassword123`
-Encourage disciples to update their password immediately
-Store disciple credentials securely until shared
+  Best Practices: Use temporary, easy-to-remember passwords like `tempPassword123` Encourage disciples to update their password immediately Store disciple credentials securely until shared
 </Tip>
 
 ---
@@ -304,11 +285,11 @@ Store disciple credentials securely until shared
 Notes
 
 <Info>
-Disciple is automatically linked to the calling sensei. The `senseiId` field is set to the authenticated sensei's user ID.
+  Disciple is automatically linked to the calling sensei. The `senseiId` field is set to the authenticated sensei's user ID.
 </Info>
 
 <Tip>
-Default avatar is assigned based on age category (grasshopper → grasshopper avatar, cricket → cricket avatar, etc.).
+  Default avatar is assigned based on age category (grasshopper → grasshopper avatar, cricket → cricket avatar, etc.).
 </Tip>
 
 ---
@@ -319,17 +300,13 @@ Next Steps
   <Card title="Get Disciples" icon="users" href="/api-reference/disciples/get-disciples">
     View all disciples
   </Card>
-  
   <Card title="Approve Tasks" icon="check-circle" href="/api-reference/tasks/approve-task">
     Approve disciple tasks
   </Card>
-  
   <Card title="Managing Disciples" icon="users-gear" href="/user-guide/sensei/managing-disciples">
     Sensei guide
   </Card>
-  
   <Card title="Sensei Insights" icon="chart-line" href="/user-guide/sensei/insights">
     Track progress
   </Card>
 </CardGroup>
-```

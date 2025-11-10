@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Auth -> Sign Out"
+description: "End user session and invalidate access token"
+---
+
 ```mdx
 ---
 title: 'Sign Out'
@@ -6,9 +11,10 @@ description: 'End user session and invalidate access token'
 ---
 
 Endpoint
-
 ```
+
 POST /make-server-4010be06/signout
+
 ```
 
 Signs out the current user and invalidates their access token.
@@ -20,9 +26,11 @@ Headers
 <ParamField header="Authorization" type="string" required>
   Bearer token to invalidate
   
-  ```
-  Authorization: Bearer YOUR_ACCESS_TOKEN
-  ```
+```
+
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+````
 </ParamField>
 
 ---
@@ -30,7 +38,7 @@ Headers
 Response
 
 <ResponseField name="success" type="boolean">
-  `true` if sign out was successful
+`true` if sign out was successful
 </ResponseField>
 
 ---
@@ -39,22 +47,22 @@ Example Request
 
 ```typescript
 const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/signout', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${accessToken}`
-  }
+method: 'POST',
+headers: {
+  'Authorization': `Bearer ${accessToken}`
+}
 })
 
 const data = await response.json()
 
 if (data.success) {
-  // Clear local storage
-  localStorage.removeItem('access_token')
-  
-  // Redirect to landing page
-  window.location.href = '/'
+// Clear local storage
+localStorage.removeItem('access_token')
+
+// Redirect to landing page
+window.location.href = '/'
 }
-```
+````
 
 ---
 
@@ -71,11 +79,13 @@ Example Response
 Error Responses
 
 <ResponseExample>
+
 ```json 401 - No Session
 {
   "error": "No session"
 }
 ```
+
 
 ```json 400 - Sign Out Failed
 {
@@ -83,11 +93,13 @@ Error Responses
 }
 ```
 
+
 ```json 500 - Server Error
 {
   "error": "Failed to sign out"
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -138,19 +150,15 @@ async function handleSignOut() {
 Notes
 
 <Warning>
-Always call shutdown functions when signing out:
-Clear `localStorage` and `sessionStorage`
-Shut down Intercom: `shutdownIntercom()`
-Clear Sentry user: `Sentry.setUser(null)`
-Reset analytics: `analytics.reset()`
+  Always call shutdown functions when signing out: Clear `localStorage` and `sessionStorage` Shut down Intercom: `shutdownIntercom()` Clear Sentry user: `Sentry.setUser(null)` Reset analytics: `analytics.reset()`
 </Warning>
 
 <Tip>
-Even if the API call fails, clear local storage to ensure user is logged out on the frontend.
+  Even if the API call fails, clear local storage to ensure user is logged out on the frontend.
 </Tip>
 
 <Info>
-After sign out, the access token is invalidated server-side and cannot be reused.
+  After sign out, the access token is invalidated server-side and cannot be reused.
 </Info>
 
 ---
@@ -161,13 +169,10 @@ Next Steps
   <Card title="Sign In" icon="arrow-right-to-bracket" href="/api-reference/auth/signin">
     Sign back in
   </Card>
-  
   <Card title="Sign Up" icon="user-plus" href="/api-reference/auth/signup">
     Create new account
   </Card>
-  
   <Card title="Intercom Integration" icon="messages" href="/technical/integrations/intercom">
     Manage Intercom on logout
   </Card>
 </CardGroup>
-```

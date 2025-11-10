@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Auth -> Sign In"
+description: "Authenticate a user with email and password"
+---
+
 ```mdx
 ---
 title: 'Sign In'
@@ -6,10 +11,11 @@ description: 'Authenticate a user with email and password'
 ---
 
 Endpoint
+```
 
-```
 POST /make-server-4010be06/signin
-```
+
+````
 
 Sign in an existing user with email and password credentials.
 
@@ -73,7 +79,7 @@ const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make
 
 const data = await response.json()
 console.log(data.session.access_token)
-```
+````
 
 ---
 
@@ -105,17 +111,20 @@ Example Response
 Error Responses
 
 <ResponseExample>
+
 ```json 400 - Invalid Credentials
 {
   "error": "Invalid login credentials"
 }
 ```
 
+
 ```json 500 - Server Error
 {
   "error": "Failed to sign in"
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -123,15 +132,15 @@ Error Responses
 Notes
 
 <Note>
-After successful sign in, store the `access_token` securely and include it in the Authorization header for subsequent API requests:
+  After successful sign in, store the `access_token` securely and include it in the Authorization header for subsequent API requests:
 
-```
-Authorization: Bearer YOUR_ACCESS_TOKEN
-```
+  ```
+  Authorization: Bearer YOUR_ACCESS_TOKEN
+  ```
 </Note>
 
 <Warning>
-Never expose access tokens in client-side code or logs. Store them securely in memory or secure storage.
+  Never expose access tokens in client-side code or logs. Store them securely in memory or secure storage.
 </Warning>
 
 ---
@@ -142,17 +151,13 @@ Next Steps
   <Card title="Get Profile" icon="user" href="/api-reference/profile/get-profile">
     Fetch user profile data
   </Card>
-  
   <Card title="Create Task" icon="plus" href="/api-reference/tasks/create-task">
     Create your first task
   </Card>
-  
   <Card title="Sign Out" icon="arrow-right-from-bracket" href="/api-reference/auth/signout">
     End user session
   </Card>
-  
   <Card title="Check Session" icon="shield-check" href="/api-reference/auth/session">
     Verify active session
   </Card>
 </CardGroup>
-```

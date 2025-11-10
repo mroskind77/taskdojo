@@ -1,3 +1,8 @@
+---
+title: "API Reference -> Intercom -> User Hash"
+description: "Generate HMAC hash for Intercom identity verification"
+---
+
 ```mdx
 ---
 title: 'Intercom User Hash'
@@ -6,9 +11,10 @@ description: 'Generate HMAC hash for Intercom identity verification'
 ---
 
 Endpoint
-
 ```
+
 POST /make-server-4010be06/intercom/user-hash
+
 ```
 
 Generate a secure HMAC-SHA256 hash for Intercom identity verification. Required for secure Intercom integration to prevent user impersonation.
@@ -24,9 +30,11 @@ Headers
 <ParamField header="Authorization" type="string" required>
   Bearer token
   
-  ```
-  Authorization: Bearer YOUR_ACCESS_TOKEN
-  ```
+```
+
+Authorization: Bearer YOUR_ACCESS_TOKEN
+
+````
 </ParamField>
 
 ---
@@ -40,9 +48,9 @@ No request body required. User ID is extracted from the auth token.
 Response
 
 <ResponseField name="userHash" type="string">
-  HMAC-SHA256 hash of user ID
-  
-  Example: `"abc123def456..."`
+HMAC-SHA256 hash of user ID
+
+Example: `"abc123def456..."`
 </ResponseField>
 
 ---
@@ -51,24 +59,24 @@ Example Request
 
 ```typescript
 const response = await fetch('https://YOUR_PROJECT.supabase.co/functions/v1/make-server-4010be06/intercom/user-hash', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json'
-  }
+method: 'POST',
+headers: {
+  'Authorization': `Bearer ${accessToken}`,
+  'Content-Type': 'application/json'
+}
 })
 
 const { userHash } = await response.json()
 
 // Use in Intercom boot
 Intercom({
-  app_id: INTERCOM_APP_ID,
-  user_id: profile.id,
-  user_hash: userHash,  // ← Security!
-  name: profile.name,
-  email: profile.email
+app_id: INTERCOM_APP_ID,
+user_id: profile.id,
+user_hash: userHash,  // ← Security!
+name: profile.name,
+email: profile.email
 })
-```
+````
 
 ---
 
@@ -85,11 +93,13 @@ Example Response
 Error Responses
 
 <ResponseExample>
+
 ```json 401 - Unauthorized
 {
   "error": "Unauthorized"
 }
 ```
+
 
 ```json 500 - Secret Not Configured
 {
@@ -97,6 +107,7 @@ Error Responses
   "details": "Intercom identity verification secret not set"
 }
 ```
+
 </ResponseExample>
 
 ---
@@ -169,14 +180,12 @@ Security Benefits
 <AccordionGroup>
   <Accordion title="Prevents Impersonation" icon="user-shield">
     Without identity verification, an attacker could pretend to be another user by simply changing the `user_id` in Intercom config.
-    
+
     With verification, Intercom checks the hash and rejects invalid users.
   </Accordion>
-
   <Accordion title="Server-Side Only Secret" icon="lock">
     The identity verification secret never leaves the server. Frontend only receives the hash, which is useless without the secret.
   </Accordion>
-
   <Accordion title="Per-User Hashes" icon="fingerprint">
     Each user has a unique hash based on their user ID. Hashes cannot be reused for other users.
   </Accordion>
@@ -188,9 +197,7 @@ Setup Requirements
 
 1. Enable Identity Verification in Intercom
 
-Go to Intercom Dashboard → Settings → Security
-Enable "Identity Verification"
-Copy the secret key
+Go to Intercom Dashboard → Settings → Security Enable "Identity Verification" Copy the secret key
 
 2. Set Supabase Secret
 
@@ -316,15 +323,15 @@ if (import.meta.env.PROD && !userHash) {
 Notes
 
 <Warning>
-NEVER store the `INTERCOM_IDENTITY_VERIFICATION_SECRET` in frontend code or environment variables accessible to the client!
+  NEVER store the `INTERCOM_IDENTITY_VERIFICATION_SECRET` in frontend code or environment variables accessible to the client!
 </Warning>
 
 <Info>
-If identity verification is not configured, Intercom will still work but without security. Always enable it in production!
+  If identity verification is not configured, Intercom will still work but without security. Always enable it in production!
 </Info>
 
 <Tip>
-Test identity verification by attempting to change `user_id` in browser DevTools. Intercom should reject the connection.
+  Test identity verification by attempting to change `user_id` in browser DevTools. Intercom should reject the connection.
 </Tip>
 
 ---
@@ -335,13 +342,10 @@ Next Steps
   <Card title="Intercom Setup" icon="messages" href="/technical/integrations/intercom">
     Complete integration guide
   </Card>
-  
   <Card title="Sign In" icon="arrow-right-to-bracket" href="/api-reference/auth/signin">
     Get access token
   </Card>
-  
   <Card title="Security" icon="shield" href="/technical/security">
     Security best practices
   </Card>
 </CardGroup>
-```

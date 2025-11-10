@@ -1,22 +1,21 @@
-```mdx
 ---
 title: Monitoring & Logging
 description: Monitor errors, performance, and usage in Task Dojo
 ---
 
-Monitoring Overview
+# Monitoring Overview
 
 Task Dojo uses a multi-layered monitoring approach:
 
-Error Tracking - Catch and fix bugs quickly
-Performance Monitoring - Track Core Web Vitals
-Usage Analytics - Understand user behavior
-Server Logs - Debug backend issues
-Database Monitoring - Track query performance
+- Error Tracking - Catch and fix bugs quickly
+- Performance Monitoring - Track Core Web Vitals
+- Usage Analytics - Understand user behavior
+- Server Logs - Debug backend issues
+- Database Monitoring - Track query performance
 
 ---
 
-Error Tracking
+## Error Tracking
 
 Recommended: Sentry
 
@@ -24,10 +23,10 @@ Setup Sentry for production error tracking:
 
 <Steps>
   <Step title="Create Sentry Account">
-Go to sentry.io
-Sign up (free tier available)
-Create new project → React
-Copy DSN (connection string)
+    Go to sentry.io
+    Sign up (free tier available)
+    Create new project → React
+    Copy DSN (connection string)
   </Step>
 
   <Step title="Install Sentry SDK">
@@ -123,7 +122,7 @@ Copy DSN (connection string)
 
 ---
 
-Manual Error Logging
+## Manual Error Logging
 
 ```typescript
 import * as Sentry from '@sentry/react'
@@ -158,7 +157,7 @@ Sentry.captureMessage('User reached max belt level', {
 
 ---
 
-Console Logging
+## Console Logging
 
 Structured logging pattern:
 
@@ -210,7 +209,7 @@ async function createTask(taskData: any) {
 
 ---
 
-Performance Monitoring
+## Performance Monitoring
 
 Web Vitals Tracking
 
@@ -269,7 +268,7 @@ useEffect(() => {
 
 ---
 
-Performance Marks
+## Performance Marks
 
 ```typescript
 // Measure custom performance
@@ -304,7 +303,7 @@ async function loadDashboard() {
 
 ---
 
-Usage Analytics
+## Usage Analytics
 
 Recommended: Intercom Events
 
@@ -337,7 +336,7 @@ trackIntercomEvent(IntercomEvents.FOCUS_TIMER_STARTED, {
 
 ---
 
-Alternative: PostHog
+## Alternative: PostHog
 
 Open-source analytics:
 
@@ -384,7 +383,7 @@ trackEvent('task_completed', {
 
 ---
 
-Server Logs
+## Server Logs
 
 Supabase Edge Function Logs
 
@@ -403,7 +402,7 @@ supabase functions logs server --level error
 
 ---
 
-Structured Server Logging
+## Structured Server Logging
 
 ```typescript
 // supabase/functions/server/index.tsx
@@ -464,7 +463,7 @@ app.post('/tasks', async (c) => {
 
 ---
 
-Log Aggregation
+## Log Aggregation
 
 Send logs to external service:
 
@@ -497,7 +496,7 @@ console.log = (message: string, ...args: any[]) => {
 
 ---
 
-Database Monitoring
+## Database Monitoring
 
 Query Performance
 
@@ -524,7 +523,7 @@ async function monitoredQuery(key: string) {
 
 ---
 
-Connection Pool Monitoring
+## Connection Pool Monitoring
 
 Supabase handles this automatically, but you can track:
 
@@ -548,7 +547,7 @@ app.use('*', async (c, next) => {
 
 ---
 
-Custom Dashboards
+## Custom Dashboards
 
 Health Check Endpoint
 
@@ -606,7 +605,7 @@ app.get('/health/detailed', async (c) => {
 
 ---
 
-Metrics Endpoint
+## Metrics Endpoint
 
 ```typescript
 // Track custom metrics
@@ -631,176 +630,4 @@ app.get('/metrics', (c) => {
 
 ---
 
-Alerting
-
-Critical Error Alerts
-
-```typescript
-// Send alert on critical errors
-async function sendAlert(message: string, data?: any) {
-  if (import.meta.env.PROD) {
-    // Send to Slack, Discord, email, etc.
-    await fetch('https://hooks.slack.com/services/YOUR/WEBHOOK/URL', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: `🚨 ${message}`,
-        attachments: [{
-          color: 'danger',
-          fields: Object.entries(data || {}).map(([key, value]) => ({
-            title: key,
-            value: String(value),
-            short: true
-          }))
-        }]
-      })
-    })
-  }
-}
-
-// Usage
-try {
-  await criticalOperation()
-} catch (error) {
-  console.error('Critical operation failed', error)
-  await sendAlert('Critical operation failed', {
-    error: error.message,
-    timestamp: new Date().toISOString()
-  })
-  throw error
-}
-```
-
----
-
-Uptime Monitoring
-
-Use external service:
-
-UptimeRobot - Free, simple uptime monitoring
-Pingdom - Advanced monitoring
-Better Uptime - Status pages
-
-Setup:
-Create account
-Add HTTP monitor: `https://your-app.com/health`
-Set check interval (1-5 minutes)
-Configure alerts (email, SMS, Slack)
-
----
-
-Monitoring Checklist
-
-<Steps>
-  <Step title="Error Tracking">
-[ ] Sentry configured
-[ ] Error boundaries added
-[ ] User context set
-[ ] Ignore list configured
-  </Step>
-
-  <Step title="Performance">
-[ ] Web Vitals tracking
-[ ] Custom performance marks
-[ ] Lighthouse audits scheduled
-[ ] Slow query alerts
-  </Step>
-
-  <Step title="Analytics">
-[ ] Event tracking configured
-[ ] User identification
-[ ] Key metrics defined
-[ ] Conversion funnels tracked
-  </Step>
-
-  <Step title="Server Logs">
-[ ] Structured logging
-[ ] Log levels configured
-[ ] Log aggregation (optional)
-[ ] Retention policy set
-  </Step>
-
-  <Step title="Alerts">
-[ ] Critical error alerts
-[ ] Uptime monitoring
-[ ] Performance degradation alerts
-[ ] Notification channels configured
-  </Step>
-</Steps>
-
----
-
-Troubleshooting
-
-High Error Rates
-
-Check:
-Sentry dashboard for error patterns
-Server logs for backend errors
-Network tab for failed requests
-Recent deployments
-
-Actions:
-Rollback if recent deploy
-Hot-fix critical bugs
-Add more error context
-
----
-
-Performance Degradation
-
-Check:
-Web Vitals metrics
-Lighthouse score trends
-Server response times
-Database query performance
-
-Actions:
-Profile with React DevTools
-Optimize slow queries
-Add caching
-Review recent changes
-
----
-
-Missing Analytics Data
-
-Check:
-Console for tracking errors
-Network tab for blocked requests
-Ad blockers (disable for testing)
-Event names match exactly
-
-Actions:
-Verify SDK initialized
-Check API keys
-Test in incognito mode
-
----
-
-Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Performance" icon="gauge" href="/technical/performance">
-    Optimize for speed
-  </Card>
-  
-  <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
-    Production deployment
-  </Card>
-  
-  <Card title="Security" icon="shield" href="/technical/security">
-    Security best practices
-  </Card>
-  
-  <Card title="API Reference" icon="code" href="/api-reference/overview">
-    API documentation
-  </Card>
-</CardGroup>
-
----
-
-<Check>
-Monitoring is essential! Track errors with Sentry, measure performance with Web Vitals, understand usage with analytics, and set up alerts for critical issues. Monitor early, fix fast.
-</Check>
-```
+##

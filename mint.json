@@ -1,4 +1,3 @@
-```json
 {
   "$schema": "https://mintlify.com/schema.json",
   "name": "Task Dojo Documentation",
@@ -241,4 +240,3 @@
     "twitter:site": "@taskdojo"
   }
 }
-```

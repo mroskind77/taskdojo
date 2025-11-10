@@ -1,4 +1,3 @@
-```mdx
 ---
 title: Data Access Patterns
 description: Database operations and API patterns in Task Dojo
@@ -290,9 +289,9 @@ app.post('/tasks', async (c) => {
   
   return c.json({ task })
 })
+```
 
 Deno.serve(app.fetch)
-```
 
 ---
 
@@ -394,10 +393,6 @@ const pending = allTasks.filter(t => !t.completed)
 const academic = allTasks.filter(t => t.category === 'academic')
 const requiresApproval = allTasks.filter(t => t.requiresApproval && t.completed && !t.approved)
 ```
-
-<Info>
-For small datasets (<1000 records), in-memory filtering is fast and simple. For larger datasets, consider indexing strategies.
-</Info>
 
 Pagination
 
@@ -636,50 +631,4 @@ Testing Data Access
 const mockKV = {
   store: new Map(),
   get: async (key: string) => mockKV.store.get(key),
-  set: async (key: string, value: any) => mockKV.store.set(key, value),
-  del: async (key: string) => mockKV.store.delete(key),
-  getByPrefix: async (prefix: string) => {
-    return Array.from(mockKV.store.entries())
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([, value]) => value)
-  }
-}
-
-// Test
-describe('Task Creation', () => {
-  it('should create task in KV store', async () => {
-    await mockKV.set('task:1', { id: '1', title: 'Test' })
-    const task = await mockKV.get('task:1')
-    expect(task.title).toBe('Test')
-  })
-})
-```
-
----
-
-Next Steps
-
-<CardGroup cols={2}>
-  <Card title="Architecture" icon="sitemap" href="/technical/architecture">
-    Overall system design
-  </Card>
-  
-  <Card title="Database Schema" icon="database" href="/technical/database">
-    Database structure
-  </Card>
-  
-  <Card title="API Reference" icon="code" href="/api-reference/overview">
-    Complete API documentation
-  </Card>
-  
-  <Card title="Testing" icon="vial" href="/technical/development/testing">
-    Test data operations
-  </Card>
-</CardGroup>
-
----
-
-<Check>
-Data access is simple! Use the KV store utilities for flexible JSONB storage. Design keys carefully, denormalize for performance, and handle errors gracefully.
-</Check>
-```
+  set: async (key: string, value:

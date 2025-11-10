@@ -1,10 +1,9 @@
-```mdx
 ---
 title: Local Development
 description: Run Task Dojo on your local development environment
 ---
 
-Quick Start
+## Quick Start
 
 Get Task Dojo running locally in 5 minutes:
 
@@ -46,36 +45,36 @@ You should see the Task Dojo landing page! 🥋
 
 ---
 
-Development Scripts
+## Development Scripts
 
 Available Commands
 
 ```bash
-Start development server with hot reload
+# Start development server with hot reload
 npm run dev
 
-Build for production
+# Build for production
 npm run build
 
-Preview production build locally
+# Preview production build locally
 npm run preview
 
-Run all tests
+# Run all tests
 npm test
 
-Run tests in watch mode
+# Run tests in watch mode
 npm run test:watch
 
-Run tests with UI
+# Run tests with UI
 npm run test:ui
 
-Generate test coverage report
+# Generate test coverage report
 npm run test:coverage
 ```
 
 ---
 
-Development Server
+## Development Server
 
 Vite Dev Server
 
@@ -99,19 +98,19 @@ Open browser: No (manual)
 Custom Port
 
 ```bash
-Use different port
+# Use different port
 npm run dev -- --port 3000
 
-Open browser automatically
+# Open browser automatically
 npm run dev -- --open
 
-Expose to network
+# Expose to network
 npm run dev -- --host
 ```
 
 ---
 
-Project Structure
+## Project Structure
 
 ```
 task-dojo/
@@ -147,7 +146,7 @@ task-dojo/
 
 ---
 
-Backend Development
+## Backend Development
 
 Edge Functions Local Development
 
@@ -198,58 +197,58 @@ Function Logs
 View real-time logs:
 
 ```bash
-In separate terminal
+# In separate terminal
 supabase functions serve server --debug
 
-Or view live logs
+# Or view live logs
 supabase functions logs server --tail
 ```
 
 ---
 
-Database Development
+## Database Development
 
 Accessing Local Database
 
 When using `supabase start`:
 
 ```bash
-Start local Supabase stack
+# Start local Supabase stack
 supabase start
 
-Database URL
+# Database URL
 postgresql://postgres:postgres@localhost:54322/postgres
 
-Studio (GUI)
+# Studio (GUI)
 http://localhost:54323
 ```
 
 Direct Database Access
 
 ```bash
-Connect with psql
+# Connect with psql
 psql postgresql://postgres:postgres@localhost:54322/postgres
 
-Run SQL
+# Run SQL
 SELECT * FROM kv_store_4010be06 LIMIT 10;
 ```
 
 Database Migrations
 
 ```bash
-Create migration
+# Create migration
 supabase migration new add_new_feature
 
-Apply migrations
+# Apply migrations
 supabase db push
 
-Reset database (careful!)
+# Reset database (careful!)
 supabase db reset
 ```
 
 ---
 
-Hot Reload & HMR
+## Hot Reload & HMR
 
 React Fast Refresh
 
@@ -290,10 +289,10 @@ Debugging HMR Issues
 HMR not working?
 
 ```bash
-Clear Vite cache
+# Clear Vite cache
 rm -rf node_modules/.vite
 
-Restart dev server
+# Restart dev server
 npm run dev
 ```
 
@@ -307,7 +306,7 @@ Side effects in module scope
 
 ---
 
-API Development
+## API Development
 
 API Client Setup
 
@@ -331,12 +330,12 @@ Testing API Endpoints
 Use curl or Postman:
 
 ```bash
-Sign up
+# Sign up
 curl -X POST http://localhost:54321/functions/v1/make-server-4010be06/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"test123","name":"Test","userType":"master","ageCategory":"mantis"}'
 
-Get profile
+# Get profile
 curl -X GET http://localhost:54321/functions/v1/make-server-4010be06/profile \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
@@ -366,7 +365,7 @@ async function apiCall(endpoint: string, options: RequestInit) {
 
 ---
 
-Browser DevTools
+## Browser DevTools
 
 React DevTools
 
@@ -388,14 +387,14 @@ Vite Plugin Inspect
 Visual dependency graph:
 
 ```bash
-Add to vite.config.ts (already included)
+# Add to vite.config.ts (already included)
 import Inspect from 'vite-plugin-inspect'
 
 export default {
   plugins: [Inspect()]
 }
 
-Visit http://localhost:5173/__inspect/
+# Visit http://localhost:5173/__inspect/
 ```
 
 Network Tab
@@ -408,7 +407,7 @@ Inspect request/response
 
 ---
 
-Common Development Tasks
+## Common Development Tasks
 
 Adding a New Component
 
@@ -530,7 +529,7 @@ Adding a Tailwind Class
 
 ---
 
-Environment Switching
+## Environment Switching
 
 Development vs Production
 
@@ -566,30 +565,30 @@ Create environment-specific files:
 Load specific environment:
 
 ```bash
-Development (default)
+# Development (default)
 npm run dev
 
-Production preview
+# Production preview
 npm run build && npm run preview
 ```
 
 ---
 
-Troubleshooting
+## Troubleshooting
 
 Port Already in Use
 
 ```bash
 Error: Port 5173 is already in use
 
-Solution 1: Use different port
+# Solution 1: Use different port
 npm run dev -- --port 3000
 
-Solution 2: Kill process on port
-macOS/Linux
+# Solution 2: Kill process on port
+# macOS/Linux
 lsof -ti:5173 | xargs kill -9
 
-Windows
+# Windows
 netstat -ano | findstr :5173
 taskkill /PID <PID> /F
 ```
@@ -599,11 +598,11 @@ Module Not Found
 ```bash
 Error: Cannot find module './Component'
 
-Solution: Check import path
+# Solution: Check import path
 import { Component } from './components/Component'  # Correct
 import { Component } from './Component'             # Wrong
 
-Rebuild dependencies
+# Rebuild dependencies
 rm -rf node_modules
 npm install
 ```
@@ -613,17 +612,17 @@ Type Errors
 ```bash
 Error: Type 'X' is not assignable to type 'Y'
 
-Solution: Regenerate types
+# Solution: Regenerate types
 npm run build
 
-Or ignore temporarily (not recommended)
+# Or ignore temporarily (not recommended)
 // @ts-ignore
 ```
 
 Stale Cache
 
 ```bash
-Clear all caches
+# Clear all caches
 rm -rf node_modules/.vite
 rm -rf dist
 npm run dev
@@ -631,7 +630,7 @@ npm run dev
 
 ---
 
-Development Best Practices
+## Development Best Practices
 
 <AccordionGroup>
   <Accordion title="Use TypeScript Strictly" icon="shield">
@@ -706,7 +705,7 @@ Development Best Practices
 
 ---
 
-Next Steps
+## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Component Structure" icon="shapes" href="/technical/development/component-structure">
@@ -718,17 +717,5 @@ Next Steps
   </Card>
   
   <Card title="Deployment" icon="rocket" href="/technical/setup/deployment">
-    Deploy to production
   </Card>
-  
-  <Card title="API Reference" icon="code" href="/api-reference/overview">
-    Explore all API endpoints
-  </Card>
-</CardGroup>
-
----
-
-<Check>
-You're ready to develop! Make changes, watch them update instantly, and build something amazing. 🚀
-</Check>
-```
+</CardGroup>  
